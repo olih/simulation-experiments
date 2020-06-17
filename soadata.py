@@ -3,12 +3,40 @@ from typing import List, Tuple, Set
 from enum import Enum, auto
 from random import sample, choice, randint
 
+class DataPropertyType:
+    def __init__(self, datatype: str):
+        self.datatype = datatype
+    
+    @classmethod
+    def from_ref_datatype(cls, servicename: str, dataname: str):
+        return cls(servicename + ":" + dataname)
+    
+    def to_string(self):
+        return self.datatype
+
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+    
+    def __eq__(self, other):
+        return self.datatype == other.datatype
+
+    def __hash__(self):
+        return hash(self.datatype)
+    
+    def is_ref(self)->bool:
+        return ":" in self.datatype
+
+intDataPropertyType= DataPropertyType("Int")
+
 class DataProperty:
     """A property
     Example: colors : Int[3, 3] """
     def __init__(self):
         self.name = ""
-        self.datatype = "Int"
+        self.datatype = intDataPropertyType
         self.min_items = 0
         self.max_items = 1
     
@@ -16,14 +44,10 @@ class DataProperty:
         self.name = name
         return self
     
-    def set_datatype(self, datatype: str):
+    def set_datatype(self, datatype: DataPropertyType):
         self.datatype = datatype
         return self
     
-    def set_ref_datatype(self, servicename: str, dataname: str):
-        self.datatype = servicename + ":" + dataname
-        return self
-
     def set_min_items(self, min_items: int):
         self.min_items = min_items
         return self
@@ -130,3 +154,45 @@ class DataService:
         """ Return true if the error rate has been triggered"""
         alea = randint(1, self.error_rate.denominator)
         return alea <= self.error_rate.numerator
+
+class DataPropertyTypeRepo:
+    def __init__(self):
+        self.simple_store = set([])
+        self.ref_store = set([])
+    
+    def add(self, dataPropertyType: DataPropertyType):
+        if (dataPropertyType.is_ref()):
+            self.ref_store.add(dataPropertyType)
+        else:
+            self.simple_store.add(dataPropertyType)
+        return self
+    
+    def discard(self, dataPropertyType: DataPropertyType):
+        if (dataPropertyType.is_ref()):
+            self.ref_store.discard(dataPropertyType)
+        else:
+            self.simple_store.discard(dataPropertyType)
+        return self
+    
+    def __len__(self):
+        return len(self.simple_store) + len(self.ref_store)
+
+    def has(self, dataPropertyType: DataPropertyType)->bool:
+        return dataPropertyType in self.simple_store or dataPropertyType in self.ref_store
+
+    def setup_simple_types(self, count: int):
+        for i in range(count):
+            self.add(DataPropertyType("Type{}".format(i)))
+
+    def simple_types_as_list(self):
+        return list(self.simple_store)
+
+    def random_simple_type(self)->DataPropertyType:
+        return choice(self.simple_types_as_list())
+
+    def ref_types_as_list(self):
+        return list(self.ref_store)
+
+    def random_ref_type(self)->DataPropertyType:
+        return choice(self.ref_types_as_list())
+
