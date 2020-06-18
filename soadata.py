@@ -114,17 +114,12 @@ class DataService:
     """A data service attached to a service """
     def __init__(self):
         self.name = ""
-        self.dataclass = None
         self.processing_magnitude = 1
         self.error_processing_magnitude = 1
         self.error_rate = Fraction(1,1000000)
 
     def set_name(self, name: str):
         self.name = name
-        return self
-
-    def set_dataclass(self, dataclass: DataClass):
-        self.dataclass = dataclass
         return self
     
     def set_processing_magnitude(self, processing_magnitude: int):
@@ -140,7 +135,7 @@ class DataService:
         return self
 
     def to_string(self):
-        return "service {} for class {}: processing_magnitude = {}, error_processing_magnitude = {}, error_rate = {}".format(self.name, self.dataclass.name, self.processing_magnitude, self.error_processing_magnitude, self.error_rate)
+        return "Service {}: processing_magnitude = {}, error_processing_magnitude = {}, error_rate = {}".format(self.name, self.processing_magnitude, self.error_processing_magnitude, self.error_rate)
     
     def __str__(self):
         return self.to_string()
@@ -149,10 +144,10 @@ class DataService:
         return self.to_string()
 
     def __eq__(self, other):
-        return (self.name, self.dataclass.name) == (other.name, other.dataclass.name)
+        return (self.name, self.processing_magnitude) == (other.name, other.processing_magnitude)
  
     def __hash__(self):
-        return hash((self.name, self.dataclass.name))
+        return hash((self.name, self.processing_magnitude))
 
     def rand_error_rate(self)->bool:
         """ Return true if the error rate has been triggered"""
@@ -357,13 +352,13 @@ class DataSystem:
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
         
-    def add_dataclass_auto(self):
+    def add_dataclass_auto(self)->DataClass:
         dataClass = DataClass()
         dataClass.set_name(self.data_class_name_repo.add_next_name())
         self.data_class_repo.add_dataclass(dataClass)
         return dataClass
 
-    def add_dataservice_auto(self):
+    def add_dataservice_auto(self)->DataService:
         dataService = DataService()
         dataService.set_name(self.data_service_name_repo.add_next_name())
         self.data_service_repo.add_dataservice(dataService)
@@ -388,3 +383,12 @@ class DataSystem:
                 prop.set_datatype(self.data_property_type_repo.random_simple_type())
                 dataClass.add(prop)
 
+    def add_basic_dataservice_auto(self, service_count: int, max_proc_micro_sec: int, worse_error_rate: int = 2):
+        for _ in range(service_count):
+            dataService = self.add_dataservice_auto()
+            dataService.set_processing_magnitude(randint(1, max_proc_micro_sec))
+            dataService.set_error_processing_magnitude(randint(1, max_proc_micro_sec))
+            dataService.set_error_rate(Fraction(1, 10**randint(worse_error_rate, 8)))
+
+    def __str__(self):
+        return "DataSystem: {}, {}, {}".format(self.data_property_type_repo, self.data_class_repo, self.data_service_repo)
