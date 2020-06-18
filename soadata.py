@@ -177,12 +177,19 @@ class DataPropertyTypeRepo:
     def __len__(self):
         return len(self.simple_store) + len(self.ref_store)
 
+    def __str__(self):
+        return "DataPropertyTypeRepo: size {}".format(len(self))
+
     def has(self, dataPropertyType: DataPropertyType)->bool:
         return dataPropertyType in self.simple_store or dataPropertyType in self.ref_store
 
-    def setup_simple_types(self, count: int):
-        for i in range(count):
-            self.add(DataPropertyType("Type{}".format(i)))
+    def add_types(self, types: List[str]):
+        for t in types:
+            self.add(DataPropertyType(t))
+        return self
+
+    def add_types_as_str(self, types: str):
+        return self.add_types(types.split(" "))
 
     def simple_types_as_list(self):
         return list(self.simple_store)
@@ -211,9 +218,17 @@ class DataPropertyNameRepo:
         self.counter = self.counter + 1
         return self.add_name("Name{}".format(self.counter))
 
+    def add_names_auto(self, count: int):
+        for i in range(count):
+            self.add_next_name()
+        return self
+
     def __len__(self):
         return len(self.names)
-    
+
+    def __str__(self):
+        return "DataPropertyNameRepo: size {}".format(len(self))
+
     def has(self, name: str)->bool:
         return name in self.names
 
