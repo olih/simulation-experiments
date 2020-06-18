@@ -347,3 +347,44 @@ class DataServiceRepo:
 
     def has(self, name: str)->bool:
         return name in self.dataservices
+
+class DataSystem:
+    def __init__(self):
+        self.data_property_type_repo = DataPropertyTypeRepo()
+        self.data_property_name_repo = DataPropertyNameRepo()
+        self.data_class_name_repo = DataClassNameRepo()
+        self.data_class_repo = DataClassRepo()
+        self.data_service_name_repo = DataServiceNameRepo()
+        self.data_service_repo = DataServiceRepo()
+        
+    def add_dataclass_auto(self):
+        dataClass = DataClass()
+        dataClass.set_name(self.data_class_name_repo.add_next_name())
+        self.data_class_repo.add_dataclass(dataClass)
+        return dataClass
+
+    def add_dataservice_auto(self):
+        dataService = DataService()
+        dataService.set_name(self.data_service_name_repo.add_next_name())
+        self.data_service_repo.add_dataservice(dataService)
+        return dataService
+
+    def add_n_datatypes(self, count: int):
+        self.data_property_type_repo.add_types_as_str("Bool Int Float")
+        self.data_property_type_repo.add_types(["Type{}".format(i) for i in range(count)])
+
+    def add_n_property_names(self, count: int):
+        self.data_property_name_repo.add_names_auto(count)
+
+    def add_simple_dataclass_auto(self, class_count: int, max_property: int, max_items: int):
+        for _ in range(class_count):
+            dataClass = self.add_dataclass_auto()
+            propertyNames = self.data_property_name_repo.sample(randint(1, max_property))
+            for pname in propertyNames:
+                prop = DataProperty()
+                prop.set_name(pname)
+                prop.set_max_items(randint(1, max_items))
+                prop.set_min_items(randint(0, prop.max_items))
+                prop.set_datatype(self.data_property_type_repo.random_simple_type())
+                dataClass.add(prop)
+
