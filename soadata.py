@@ -294,6 +294,9 @@ class DataClassRepo:
     def has(self, name: str)->bool:
         return name in self.dataclasses
 
+    def choice(self)->DataClass:
+        return self.dataclasses[choice(list(self.dataclasses.keys()))]
+
 class DataServiceNameRepo:
     """ These could human readable and are re-used across classes but not necessarily in a consistent manner. Ex: PersonDB, ... """
     def __init__(self):

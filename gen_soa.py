@@ -81,6 +81,7 @@ for srv in range(config.get_simple_service_count()):
     dataService.set_processing_magnitude(randint(1, MAX_PROCESSING_MAGNITUDE_MICRO_SEC)) 
     dataService.set_error_processing_magnitude(randint(1, MAX_PROCESSING_MAGNITUDE_MICRO_SEC))
     dataService.set_error_rate(Fraction(1, 10**randint(2, 6)))
+    dataService.set_dataclass(dataClassRepo.choice())
     dataServiceRepo.add_dataservice(dataService)
 
 
