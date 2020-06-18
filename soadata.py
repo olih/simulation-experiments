@@ -294,22 +294,53 @@ class DataClassRepo:
     def has(self, name: str)->bool:
         return name in self.dataclasses
 
+class DataServiceNameRepo:
+    """ These could human readable and are re-used across classes but not necessarily in a consistent manner. Ex: PersonDB, ... """
+    def __init__(self):
+        self.counter = 0
+        self.names = set([])
+    
+    def add_name(self, name: str):
+        self.names.add(name)
+        return name
+
+    def add_next_name(self):
+        self.counter = self.counter + 1
+        return self.add_name("ServiceName{}".format(self.counter))
+
+    def add_names_auto(self, count: int):
+        for i in range(count):
+            self.add_next_name()
+        return self
+
+    def __len__(self):
+        return len(self.names)
+
+    def __str__(self):
+        return "DataServiceNameRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.names
+
 class DataServiceRepo:
     """  Store a service  """
     def __init__(self):
         self.dataservices = {}
     
-    def add_dataclass(self, dataservice: DataService):
+    def add_dataservice(self, dataservice: DataService):
         self.dataservices[dataservice.name] = dataservice
         return self
 
-    def remove_dataclass(self, dataservice: DataService):
+    def remove_dataservice(self, dataservice: DataService):
         if dataservice.name in self.dataservices:
             del self.dataservices[dataservice.name]
         return self
 
     def __len__(self):
         return len(self.dataservices)
-    
+
+    def __str__(self):
+        return "DataServiceRepo: size {}".format(len(self))
+
     def has(self, name: str)->bool:
         return name in self.dataservices
