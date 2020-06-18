@@ -351,6 +351,7 @@ class DataSystem:
         self.data_class_repo = DataClassRepo()
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
+        self.root_service = DataService().set_name("root")
         
     def add_dataclass_auto(self)->DataClass:
         dataClass = DataClass()
@@ -390,5 +391,10 @@ class DataSystem:
             dataService.set_error_processing_magnitude(randint(1, max_proc_micro_sec))
             dataService.set_error_rate(Fraction(1, 10**randint(worse_error_rate, 8)))
 
+    def set_root_service(self, proc_micro_sec: int = 1, err_proc_micro_sec: int = 1, worse_error_rate: int = 2):
+        self.root_service.set_processing_magnitude(proc_micro_sec)
+        self.root_service.set_error_processing_magnitude(err_proc_micro_sec)
+        self.root_service.set_error_rate(Fraction(1, 10**worse_error_rate))
+
     def __str__(self):
-        return "DataSystem: {}, {}, {}".format(self.data_property_type_repo, self.data_class_repo, self.data_service_repo)
+        return "DataSystem: {}, {}, {}, {}".format(self.data_property_type_repo, self.data_class_repo, self.data_service_repo, self.root_service)

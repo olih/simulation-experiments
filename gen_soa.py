@@ -25,7 +25,9 @@ args = parser.parse_args()
 
 MAX_ITEMS_MAGNITUDE = 48 #2^48
 MAX_PROCESSING_MAGNITUDE_MICRO_SEC = 27 # 2^27
+ROOT_PROCESSING_MAGNITUDE_MICRO_SEC = 10 # ms
 WORSE_ERROR_RATE = 2
+ROOT_ERROR_RATE = 6
 
 class Config:
     def __init__(self):
@@ -59,4 +61,5 @@ for _ in range(config.datatype_count):
     dataSystem.add_n_property_names(config.property_name_count)
     dataSystem.add_simple_dataclass_auto(class_count = config.get_simple_class_count(), max_property = config.properties_max, max_items = MAX_ITEMS_MAGNITUDE)
     dataSystem.add_basic_dataservice_auto(service_count = config.service_count, max_proc_micro_sec = MAX_PROCESSING_MAGNITUDE_MICRO_SEC, worse_error_rate=WORSE_ERROR_RATE)
+    dataSystem.set_root_service(proc_micro_sec=ROOT_PROCESSING_MAGNITUDE_MICRO_SEC, err_proc_micro_sec=ROOT_PROCESSING_MAGNITUDE_MICRO_SEC, worse_error_rate=ROOT_ERROR_RATE)
     print(dataSystem)
