@@ -196,3 +196,63 @@ class DataPropertyTypeRepo:
     def random_ref_type(self)->DataPropertyType:
         return choice(self.ref_types_as_list())
 
+
+class DataPropertyNameRepo:
+    """ These are usually human readable and are re-used across classes but not necessarily in a consistent manner. Ex: name, description, ... """
+    def __init__(self):
+        self.counter = 0
+        self.names = set([])
+    
+    def add_name(self, name: str):
+        self.names.add(name)
+        return name
+
+    def add_next_name(self):
+        self.counter = self.counter + 1
+        return self.add_name("Name{}".format(self.counter))
+
+    def __len__(self):
+        return len(self.names)
+    
+    def has(self, name: str)->bool:
+        return name in self.names
+
+class DataClassRepo:
+    """  Store a class with a list of properties """
+    def __init__(self):
+        self.dataclasses = {}
+    
+    def add_dataclass(self, dataclass: DataClass):
+        self.dataclasses[dataclass.name] = dataclass
+        return self
+
+    def remove_dataclass(self, dataclass: DataClass):
+        if dataclass.name in self.dataclasses:
+            del self.dataclasses[dataclass.name]
+        return self
+
+    def __len__(self):
+        return len(self.dataclasses)
+    
+    def has(self, name: str)->bool:
+        return name in self.dataclasses
+
+class DataServiceRepo:
+    """  Store a service  """
+    def __init__(self):
+        self.dataservices = {}
+    
+    def add_dataclass(self, dataservice: DataService):
+        self.dataservices[dataservice.name] = dataservice
+        return self
+
+    def remove_dataclass(self, dataservice: DataService):
+        if dataservice.name in self.dataservices:
+            del self.dataservices[dataservice.name]
+        return self
+
+    def __len__(self):
+        return len(self.dataservices)
+    
+    def has(self, name: str)->bool:
+        return name in self.dataservices
