@@ -88,6 +88,10 @@ class DataClass:
         self.properties = props
         return self
     
+    def add(self, prop: DataProperty):
+        self.properties.add(prop)
+        return self
+
     def to_string(self):
         return "name = {}\n----\n".format(self.name) + "/n".join([str(p) for p in self.properties])
     
@@ -203,6 +207,10 @@ class DataPropertyTypeRepo:
     def random_ref_type(self)->DataPropertyType:
         return choice(self.ref_types_as_list())
 
+    def random_type(self, refRatio: Fraction)->DataPropertyType:
+        alea = randint(1, refRatio.denominator)
+        isRef = alea <= refRatio.numerator
+        return self.random_ref_type() if isRef else self.random_simple_type()
 
 class DataPropertyNameRepo:
     """ These are usually human readable and are re-used across classes but not necessarily in a consistent manner. Ex: name, description, ... """
@@ -219,7 +227,7 @@ class DataPropertyNameRepo:
         return self.add_name("Name{}".format(self.counter))
 
     def add_names_auto(self, count: int):
-        for i in range(count):
+        for _ in range(count):
             self.add_next_name()
         return self
 
@@ -228,6 +236,37 @@ class DataPropertyNameRepo:
 
     def __str__(self):
         return "DataPropertyNameRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.names
+
+    def sample(self, count: int)->List[str]:
+        return sample(list(self.names), count)
+
+class DataClassNameRepo:
+    """ These are usually human readable and are re-used across classes but not necessarily in a consistent manner. Ex: Person, ... """
+    def __init__(self):
+        self.counter = 0
+        self.names = set([])
+    
+    def add_name(self, name: str):
+        self.names.add(name)
+        return name
+
+    def add_next_name(self):
+        self.counter = self.counter + 1
+        return self.add_name("ClassName{}".format(self.counter))
+
+    def add_names_auto(self, count: int):
+        for i in range(count):
+            self.add_next_name()
+        return self
+
+    def __len__(self):
+        return len(self.names)
+
+    def __str__(self):
+        return "DataClassNameRepo: size {}".format(len(self))
 
     def has(self, name: str)->bool:
         return name in self.names
@@ -248,7 +287,10 @@ class DataClassRepo:
 
     def __len__(self):
         return len(self.dataclasses)
-    
+
+    def __str__(self):
+        return "DataClassRepo: size {}".format(len(self))
+
     def has(self, name: str)->bool:
         return name in self.dataclasses
 
