@@ -117,6 +117,8 @@ class DataService:
         self.processing_magnitude = 1
         self.error_processing_magnitude = 1
         self.error_rate = Fraction(1,1000000)
+        self.max_memory_byte = 100000
+        self.timeout_magnitude = 27
 
     def set_name(self, name: str):
         self.name = name
@@ -134,8 +136,22 @@ class DataService:
         self.error_rate = error_rate
         return self
 
+    def set_max_memory_byte(self, max_memory_byte: int):
+        self.max_memory_byte = max_memory_byte
+        return self
+
+    def set_timeout_magnitude(self, timeout_magnitude):
+        self.timeout_magnitude = timeout_magnitude
+        return self
+
     def to_string(self):
-        return "Service {}: processing_magnitude = {}, error_processing_magnitude = {}, error_rate = {}".format(self.name, self.processing_magnitude, self.error_processing_magnitude, self.error_rate)
+        return "Service {}: processing_magnitude = {}, error_processing_magnitude = {}, timeout_magnitude {}, error_rate = {}, memory(bytes) {}".format(
+            self.name,
+            self.processing_magnitude, 
+            self.error_processing_magnitude,
+            self.timeout_magnitude,
+            self.error_rate,
+            self.max_memory_byte)
     
     def __str__(self):
         return self.to_string()
@@ -343,15 +359,71 @@ class DataServiceRepo:
     def has(self, name: str)->bool:
         return name in self.dataservices
 
-class DataSystem:
+    def get_names(self)->List[str]:
+        return list(self.dataservices.keys())
+
+    def get_by_name(self, name: str):
+        return self.dataservices[name]
+
+class RandRange:
+    def __init__(self, start: int, stop: int):
+        self.start = 0
+        self.stop = 10
+
+    def random(self):
+        return randint(self.start, self.stop)
+
+    def __str__(self):
+        return "RandRange: [{}, {}]".format(self.start, self.stop)
+
+class DataSystemConfig:
     def __init__(self):
+        self.class_count_range = RandRange(1, 50)
+        self.service_count_range = RandRange(1, 50)
+        self.property_count_range = RandRange(1, 50)
+        self.max_items_range = RandRange(1, 1000)
+        self.proc_micro_sec_range = RandRange(1, 20)
+        self.error_rate_range = RandRange(2, 8)
+        self.timeout_magnitude = 27
+    
+    def set_service_count_range(self, service_count_range: RandRange):
+        self.service_count_range = service_count_range
+        return self
+    
+    def set_class_count_range(self, class_count_range: RandRange):
+        self.class_count_range = class_count_range
+        return self
+
+    def set_property_count_range(self, property_count_range: RandRange):
+        self.property_count_range = property_count_range
+        return self
+
+    def set_max_items_range(self, max_items_range: RandRange):
+        self.max_items_range = max_items_range
+        return self
+
+    def set_proc_micro_sec_range(self, proc_micro_sec_range: RandRange):
+        self.proc_micro_sec_range = proc_micro_sec_range
+        return self
+
+    def set_error_rate_range(self, error_rate_range: RandRange):
+        self.error_rate_range = error_rate_range
+        return self
+
+    def set_timeout_magnitude(self, timeout_magnitude: int):
+        self.timeout_magnitude = timeout_magnitude
+        return self
+
+class DataSystem:
+    def __init__(self, config: DataSystemConfig):
+        self.config = config
         self.data_property_type_repo = DataPropertyTypeRepo()
         self.data_property_name_repo = DataPropertyNameRepo()
         self.data_class_name_repo = DataClassNameRepo()
         self.data_class_repo = DataClassRepo()
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
-        self.root_service = DataService().set_name("root")
+        self.root_service = None
         
     def add_dataclass_auto(self)->DataClass:
         dataClass = DataClass()
@@ -372,29 +444,28 @@ class DataSystem:
     def add_n_property_names(self, count: int):
         self.data_property_name_repo.add_names_auto(count)
 
-    def add_simple_dataclass_auto(self, class_count: int, max_property: int, max_items: int):
-        for _ in range(class_count):
+    def add_simple_dataclass_auto(self):
+        for _ in range(self.config.class_count_range.random()):
             dataClass = self.add_dataclass_auto()
-            propertyNames = self.data_property_name_repo.sample(randint(1, max_property))
+            propertyNames = self.data_property_name_repo.sample(self.config.property_count_range.random())
             for pname in propertyNames:
                 prop = DataProperty()
                 prop.set_name(pname)
-                prop.set_max_items(randint(1, max_items))
+                prop.set_max_items(self.config.max_items_range.random())
                 prop.set_min_items(randint(0, prop.max_items))
                 prop.set_datatype(self.data_property_type_repo.random_simple_type())
                 dataClass.add(prop)
 
-    def add_basic_dataservice_auto(self, service_count: int, max_proc_micro_sec: int, worse_error_rate: int = 2):
-        for _ in range(service_count):
+    def add_basic_dataservice_auto(self):
+        for _ in range(self.config.service_count_range.random()):
             dataService = self.add_dataservice_auto()
-            dataService.set_processing_magnitude(randint(1, max_proc_micro_sec))
-            dataService.set_error_processing_magnitude(randint(1, max_proc_micro_sec))
-            dataService.set_error_rate(Fraction(1, 10**randint(worse_error_rate, 8)))
-
-    def set_root_service(self, proc_micro_sec: int = 1, err_proc_micro_sec: int = 1, worse_error_rate: int = 2):
-        self.root_service.set_processing_magnitude(proc_micro_sec)
-        self.root_service.set_error_processing_magnitude(err_proc_micro_sec)
-        self.root_service.set_error_rate(Fraction(1, 10**worse_error_rate))
-
+            dataService.set_processing_magnitude(self.config.proc_micro_sec_range.random())
+            dataService.set_error_processing_magnitude(self.config.proc_micro_sec_range.random())
+            dataService.set_timeout_magnitude(self.config.timeout_magnitude)
+            dataService.set_error_rate(Fraction(1, 10**self.config.error_rate_range.random()))
+    
+    def add_root_service_auto(self):
+        self.root_service = self.data_service_repo.get_by_name(choice(self.data_service_repo.get_names()))
+        
     def __str__(self):
         return "DataSystem: {}, {}, {}, {}".format(self.data_property_type_repo, self.data_class_repo, self.data_service_repo, self.root_service)

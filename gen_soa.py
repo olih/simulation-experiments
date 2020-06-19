@@ -63,3 +63,5 @@ for _ in range(config.datatype_count):
     dataSystem.add_basic_dataservice_auto(service_count = config.service_count, max_proc_micro_sec = MAX_PROCESSING_MAGNITUDE_MICRO_SEC, worse_error_rate=WORSE_ERROR_RATE)
     dataSystem.set_root_service(proc_micro_sec=ROOT_PROCESSING_MAGNITUDE_MICRO_SEC, err_proc_micro_sec=ROOT_PROCESSING_MAGNITUDE_MICRO_SEC, worse_error_rate=ROOT_ERROR_RATE)
     print(dataSystem)
+    # TODO adds ref data
+    # Generate csv
