@@ -110,6 +110,34 @@ class DataClass:
     def __len__(self):
         return len(self.properties)
 
+class DataFeature:
+    """A feature that can be added to a service"""
+    def __init__(self):
+        self.name = ""
+        self.category_name = "default"
+    
+    def set_name(self, name: str):
+        self.name = name
+        return self
+
+    def set_category_name(self, category_name: str):
+        self.category_name = category_name
+        return self
+    
+    def to_string(self):
+        return "DataFeature: {}, category: {}".format(self.name, self.category_name)
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+
+    def __eq__(self, other):
+        return (self.name, self.category_name) == (other.name, other.category_name)
+    
+    def __hash__(self):
+        return hash((self.name, self.category_name))
+
 class DataService:
     """A data service attached to a service """
     def __init__(self):
@@ -119,6 +147,7 @@ class DataService:
         self.error_rate = Fraction(1,1000000)
         self.max_memory_byte = 100000
         self.timeout_magnitude = 27
+        self.features = []
 
     def set_name(self, name: str):
         self.name = name
@@ -144,14 +173,19 @@ class DataService:
         self.timeout_magnitude = timeout_magnitude
         return self
 
+    def set_features(self, features: List[DataFeature]):
+        self.features = features
+        return self
+
     def to_string(self):
-        return "Service {}: processing_magnitude = {}, error_processing_magnitude = {}, timeout_magnitude {}, error_rate = {}, memory(bytes) {}".format(
+        return "Service {}: processing_magnitude = {}, error_processing_magnitude = {}, timeout_magnitude {}, error_rate = {}, memory(bytes) {}, features: {}".format(
             self.name,
             self.processing_magnitude, 
             self.error_processing_magnitude,
             self.timeout_magnitude,
             self.error_rate,
-            self.max_memory_byte)
+            self.max_memory_byte,
+            len(self.features))
     
     def __str__(self):
         return self.to_string()
@@ -282,6 +316,60 @@ class DataClassNameRepo:
     def has(self, name: str)->bool:
         return name in self.names
 
+class DataFeatureNameRepo:
+    """ These could human readable and are re-used across classes but not necessarily in a consistent manner. Ex: persistence1, ... """
+    def __init__(self):
+        self.counter = 0
+        self.names = set([])
+    
+    def add_name(self, name: str):
+        self.names.add(name)
+        return name
+
+    def add_next_name(self):
+        self.counter = self.counter + 1
+        return self.add_name("Feature{}".format(self.counter))
+
+    def add_names_auto(self, count: int):
+        for i in range(count):
+            self.add_next_name()
+        return self
+
+    def __len__(self):
+        return len(self.names)
+
+    def __str__(self):
+        return "DataFeatureNameRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.names
+
+class DataFeatureRepo:
+    """  Store a feature """
+    def __init__(self):
+        self.features = {}
+    
+    def add_datafeature(self, datafeature: DataFeature):
+        self.features[datafeature.name] = datafeature
+        return self
+
+    def remove_datafeature(self, datafeature: DataFeature):
+        if datafeature.name in self.features:
+            del self.features[datafeature.name]
+        return self
+
+    def __len__(self):
+        return len(self.features)
+
+    def __str__(self):
+        return "DataFeatureRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.features
+
+    def choice(self)->DataFeature:
+        return self.features[choice(list(self.features.keys()))]
+
 class DataClassRepo:
     """  Store a class with a list of properties """
     def __init__(self):
@@ -320,7 +408,7 @@ class DataServiceNameRepo:
 
     def add_next_name(self):
         self.counter = self.counter + 1
-        return self.add_name("ServiceName{}".format(self.counter))
+        return self.add_name("Service{}".format(self.counter))
 
     def add_names_auto(self, count: int):
         for i in range(count):
@@ -385,12 +473,15 @@ class DataSystemConfig:
         self.datatype_count_range = RandRange(1, 50)
         self.class_count_range = RandRange(1, 50)
         self.service_count_range = RandRange(1, 50)
+        self.feature_count_range = RandRange(1, 50)
         self.reusable_property_count_range = RandRange(100, 500)
         self.property_count_range = RandRange(1, 50)
+        self.service_feature_count_range = RandRange(1, 5)
         self.max_items_range = RandRange(1, 1000)
         self.proc_micro_sec_range = RandRange(1, 20)
         self.error_rate_range = RandRange(2, 8)
         self.timeout_magnitude = 27
+        self.category_names = []
     
     @classmethod
     def from_obj(cls, content):
@@ -398,12 +489,15 @@ class DataSystemConfig:
         config.set_datatype_count_range(RandRange.from_obj(content["datatype-count-range"]))
         config.set_class_count_range(RandRange.from_obj(content["class-count-range"]))
         config.set_service_count_range(RandRange.from_obj(content["service-count-range"]))
+        config.set_feature_count_range(RandRange.from_obj(content["feature-count-range"]))
         config.set_reusable_property_count_range(RandRange.from_obj(content["reusable-property-count-range"]))
         config.set_property_count_range(RandRange.from_obj(content["property-count-range"]))
+        config.set_service_feature_count_range(RandRange.from_obj(content["service-feature-count-range"]))
         config.set_max_items_range(RandRange.from_obj(content["max-items-range"]))
         config.set_proc_micro_sec_range(RandRange.from_obj(content["proc-micro-sec-range"]))
         config.set_error_rate_range(RandRange.from_obj(content["error-rate-range"]))
         config.set_timeout_magnitude(content["timeout-magnitude"])
+        config.set_category_names(content["category-names"])
 
     def set_datatype_count_range(self, datatype_count_range: RandRange):
         self.datatype_count_range = datatype_count_range
@@ -411,6 +505,10 @@ class DataSystemConfig:
 
     def set_class_count_range(self, class_count_range: RandRange):
         self.class_count_range = class_count_range
+        return self
+
+    def set_feature_count_range(self, feature_count_range: RandRange):
+        self.feature_count_range = feature_count_range
         return self
 
     def set_service_count_range(self, service_count_range: RandRange):
@@ -423,6 +521,10 @@ class DataSystemConfig:
 
     def set_property_count_range(self, property_count_range: RandRange):
         self.property_count_range = property_count_range
+        return self
+
+    def set_service_feature_count_range(self, service_feature_count_range: RandRange):
+        self.service_feature_count_range = service_feature_count_range
         return self
 
     def set_max_items_range(self, max_items_range: RandRange):
@@ -441,6 +543,10 @@ class DataSystemConfig:
         self.timeout_magnitude = timeout_magnitude
         return self
 
+    def set_category_names(self, category_names: List[str]):
+        self.category_names = category_names
+        return self
+
 class DataSystem:
     def __init__(self, config: DataSystemConfig):
         self.config = config
@@ -448,6 +554,8 @@ class DataSystem:
         self.data_property_name_repo = DataPropertyNameRepo()
         self.data_class_name_repo = DataClassNameRepo()
         self.data_class_repo = DataClassRepo()
+        self.data_feature_name_repo = DataFeatureNameRepo()
+        self.data_feature_repo = DataFeatureRepo()
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
         self.root_service = None
@@ -463,6 +571,12 @@ class DataSystem:
         dataService.set_name(self.data_service_name_repo.add_next_name())
         self.data_service_repo.add_dataservice(dataService)
         return dataService
+
+    def add_datafeature_auto(self)->DataFeature:
+        dataFeature = DataFeature()
+        dataFeature.set_name(self.data_feature_name_repo.add_next_name())
+        self.data_feature_repo.add_datafeature(dataFeature)
+        return dataFeature
 
     def add_datatypes_auto(self):
         self.data_property_type_repo.add_types_as_str("Bool Int Float")
@@ -483,6 +597,11 @@ class DataSystem:
                 prop.set_datatype(self.data_property_type_repo.random_simple_type())
                 dataClass.add(prop)
 
+    def add_basic_datafeature_auto(self):
+        for _ in range(self.config.feature_count_range.random()):
+            dataFeature = self.add_datafeature_auto()
+            dataFeature.set_name(choice(self.config.category_names))
+
     def add_basic_dataservice_auto(self):
         for _ in range(self.config.service_count_range.random()):
             dataService = self.add_dataservice_auto()
@@ -490,6 +609,7 @@ class DataSystem:
             dataService.set_error_processing_magnitude(self.config.proc_micro_sec_range.random())
             dataService.set_timeout_magnitude(self.config.timeout_magnitude)
             dataService.set_error_rate(Fraction(1, 10**self.config.error_rate_range.random()))
+            dataService.set_features([self.data_feature_repo.choice() for _ in range(self.config.service_feature_count_range.random())])
     
     def add_root_service_auto(self):
         self.root_service = self.data_service_repo.get_by_name(choice(self.data_service_repo.get_names()))
@@ -497,6 +617,7 @@ class DataSystem:
     def prepare(self):
         self.add_datatypes_auto()
         self.add_property_names_auto()
+        self.add_basic_datafeature_auto()
         self.add_simple_dataclass_auto()
         self.add_basic_dataservice_auto()
         self.add_root_service_auto()
