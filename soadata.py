@@ -3,6 +3,10 @@ from typing import List, Tuple, Set
 from enum import Enum, auto
 from random import sample, choice, randint, uniform
 
+def logme(something):
+    print(something)
+    return something
+
 class DataPropertyType:
     def __init__(self, datatype: str):
         self.datatype = datatype
@@ -552,8 +556,8 @@ class DataServiceRepo:
 
 class RandRange:
     def __init__(self, start: int, stop: int):
-        self.start = 0
-        self.stop = 10
+        self.start = start
+        self.stop = stop
 
     @classmethod
     def from_obj(cls, content):
@@ -567,8 +571,8 @@ class RandRange:
 
 class RatioRange:
     def __init__(self, start: Fraction, stop: Fraction):
-        self.start = Fraction("1/20")
-        self.stop = Fraction("5/20")
+        self.start = start
+        self.stop = stop
 
     @classmethod
     def from_obj(cls, content):
@@ -588,6 +592,7 @@ class RatioRange:
 
 class DataSystemConfig:
     def __init__(self):
+        self.datasystem_count = 50
         self.datatype_count_range = RandRange(1, 50)
         self.ref_datatype_ratio_range = RatioRange(Fraction(1, 20), Fraction(2, 20))
         self.class_count_range = RandRange(1, 50)
@@ -598,6 +603,7 @@ class DataSystemConfig:
         self.property_count_range = RandRange(1, 50)
         self.ref_property_ratio_range = RatioRange(Fraction(1, 20), Fraction(2, 20))
         self.service_feature_count_range = RandRange(1, 5)
+        self.service_requirement_count_range = RandRange(1, 5)
         self.max_items_range = RandRange(1, 1000)
         self.max_memory_byte_range = RandRange(1000000, 100000000)
         self.proc_micro_sec_range = RandRange(1, 20)
@@ -608,6 +614,8 @@ class DataSystemConfig:
 
     def __str__(self):
         return ";".join([
+            "datasystem_count=",
+            str(self.datasystem_count),
             "datatype_count_range=",
             str(self.datatype_count_range),
             "ref_datatype_ratio_range=",
@@ -628,6 +636,8 @@ class DataSystemConfig:
             str(self.ref_property_ratio_range),
             "service_feature_count_range=",
             str(self.service_feature_count_range),
+            "service_requirement_count_range=",
+            str(self.service_requirement_count_range),
             "max_items_range=",
             str(self.max_items_range),
             "max_memory_byte_range=",
@@ -647,6 +657,7 @@ class DataSystemConfig:
     @classmethod
     def from_obj(cls, content):
         config = cls()
+        config.set_datasystem_count(int(content["datasystem-count"]))
         config.set_datatype_count_range(RandRange.from_obj(content["datatype-count-range"]))
         config.set_ref_datatype_ratio_range(RatioRange.from_obj(content["ref-datatype-ratio-range"]))
         config.set_class_count_range(RandRange.from_obj(content["class-count-range"]))
@@ -657,6 +668,7 @@ class DataSystemConfig:
         config.set_property_count_range(RandRange.from_obj(content["property-count-range"]))
         config.set_ref_property_ratio_range(RatioRange.from_obj(content["ref-property-ratio-range"]))
         config.set_service_feature_count_range(RandRange.from_obj(content["service-feature-count-range"]))
+        config.set_service_requirement_count_range(RandRange.from_obj(content["service-requirement-count-range"]))
         config.set_max_items_range(RandRange.from_obj(content["max-items-range"]))
         config.set_max_memory_byte_range(RandRange.from_obj(content["max-memory-byte-range"]))
         config.set_proc_micro_sec_range(RandRange.from_obj(content["proc-micro-sec-range"]))
@@ -664,6 +676,11 @@ class DataSystemConfig:
         config.set_timeout_magnitude_range(RandRange.from_obj(content["timeout-magnitude-range"]))
         config.set_feature_category_names(content["feature-category-names"])
         config.set_requirement_category_names(content["requirement-category-names"])
+        return config
+
+    def set_datasystem_count(self, datasystem_count: int):
+        self.datasystem_count = datasystem_count
+        return self
 
     def set_datatype_count_range(self, datatype_count_range: RandRange):
         self.datatype_count_range = datatype_count_range
@@ -703,6 +720,10 @@ class DataSystemConfig:
 
     def set_service_feature_count_range(self, service_feature_count_range: RandRange):
         self.service_feature_count_range = service_feature_count_range
+        return self
+
+    def set_service_requirement_count_range(self, service_requirement_count_range: RandRange):
+        self.service_requirement_count_range = service_requirement_count_range
         return self
 
     def set_max_items_range(self, max_items_range: RandRange):
@@ -769,21 +790,21 @@ class DataSystem:
     def add_datarequirement_auto(self)->DataRequirement:
         dataRequirement = DataRequirement()
         dataRequirement.set_name(self.data_requirement_name_repo.add_next_name())
-        self.data_feature_repo.add_datafeature(dataRequirement)
+        self.data_requirement_repo.add_datarequirement(dataRequirement)
         return dataRequirement
 
     def add_property_names_auto(self):
         self.data_property_name_repo.add_names_auto(self.config.reusable_property_count_range.random())
 
     def add_basic_datafeature_auto(self):
-        for _ in range(self.config.feature_count_range.random()):
+        for _ in range(logme(self.config.feature_count_range).random()):
             dataFeature = self.add_datafeature_auto()
-            dataFeature.set_name(choice(self.config.feature_category_names))
+            dataFeature.set_category_name(choice(self.config.feature_category_names))
 
     def add_basic_datarequirement_auto(self):
         for _ in range(self.config.requirement_count_range.random()):
             dataRequirement = self.add_datarequirement_auto()
-            dataRequirement.set_name(choice(self.config.requirement_category_names))
+            dataRequirement.set_category_name(choice(self.config.requirement_category_names))
 
     def add_basic_dataservice_auto(self):
         for _ in range(self.config.service_count_range.random()):
@@ -808,10 +829,12 @@ class DataSystem:
         simple_count = self.config.ref_datatype_ratio_range.random_int(all_count)
         created_types = ["Type{}".format(i) for i in range(simple_count)] + ["{}:{}".format(self.data_service_repo.choice().name, self.data_class_name_repo.choice()) for _ in range(all_count - simple_count)]
         self.data_property_type_repo.add_types(created_types)
+        self.data_property_type_repo.add_types_as_str("Bool Char Int Float")
 
     def add_basic_dataclass_auto(self):
-        for _ in range(self.data_class_name_repo.get_names()):
-            dataClass = self.add_dataclass_auto()
+        for name in self.data_class_name_repo.get_names():
+            dataClass = DataClass()
+            dataClass.set_name(name)
             propertyNames = self.data_property_name_repo.sample(self.config.property_count_range.random())
             for pname in propertyNames:
                 prop = DataProperty()
@@ -824,6 +847,7 @@ class DataSystem:
     def prepare(self):
         self.add_property_names_auto()
         self.add_basic_datafeature_auto()
+        self.add_basic_datarequirement_auto()
         self.add_basic_dataservice_auto()
         self.add_root_service_auto()
         self.add_dataclass_names_auto()
@@ -832,4 +856,12 @@ class DataSystem:
 
 
     def __str__(self):
-        return "DataSystem: {}, {}, {}, {}".format(self.data_property_type_repo, self.data_class_repo, self.data_service_repo, self.root_service)
+        return "DataSystem: {}, {}, {}, {}, {}, {}, {}".format(
+            self.data_property_type_repo,
+            self.data_property_name_repo,
+            self.data_class_repo,
+            self.data_service_repo,
+            self.data_feature_repo,
+            self.data_requirement_repo,
+            self.root_service
+            )

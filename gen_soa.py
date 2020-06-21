@@ -30,8 +30,9 @@ def load_config():
         return json.load(jsonfile)
 
 dataconfig = DataSystemConfig.from_obj(load_config())
+print(dataconfig)
 
-for _ in range(dataconfig.datatype_count):
+for _ in range(dataconfig.datasystem_count):
     dataSystem = DataSystem(dataconfig)
     dataSystem.prepare()
     print(dataSystem)
