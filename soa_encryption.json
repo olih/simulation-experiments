@@ -1,23 +1,32 @@
 {
-    "title": "",
-    "datasystem-count": 100,
-    "datatype-count-range": { "start": 1, "stop": 20},
-    "ref-datatype-ratio-range": { "start": "1/2", "stop": "9/10"},
-    "class-count-range": { "start": 10, "stop": 60},
-    "service-count-range": { "start": 5, "stop": 30},
-    "feature-count-range": { "start": 10, "stop": 60},
-    "requirement-count-range": { "start": 10, "stop": 60},
-    "reusable-property-count-range": { "start": 100, "stop": 600},
-    "property-count-range": { "start": 1, "stop": 60},
-    "ref-property-ratio-range": { "start": "1/200", "stop": "1/5"},
-    "service-feature-count-range": { "start": 3, "stop": 10},
-    "service-requirement-count-range": { "start": 1, "stop": 2},
-    "service-requirement-ratio-range": { "start": "1/5", "stop": "1/3"},
-    "max-items-range": { "start": 1, "stop": 1000000},
-    "max-memory-byte-range": { "start": 1000, "stop": 10000000},
-    "proc-micro-sec-range": { "start": 1, "stop": 30},
-    "error-rate-range": { "start": 2, "stop": 8},
-    "timeout-magnitude-range": { "start": 10, "stop": 30},
-    "feature-category-names": ["persistence", "encryption", "metric", "caching", "dashboard", "schema", "search", "export", "json", "versioning", "backup", "failover"],
-    "requirement-category-names": ["unusual-language", "unusual-skill"]
+    "experiment": {
+        "title": "",
+        "datasystem-count": 100,
+        "datatype-count-range": { "start": 1, "stop": 20},
+        "ref-datatype-ratio-range": { "start": "1/2", "stop": "9/10"},
+        "class-count-range": { "start": 10, "stop": 60},
+        "service-count-range": { "start": 5, "stop": 30},
+        "feature-count-range": { "start": 10, "stop": 60},
+        "requirement-count-range": { "start": 10, "stop": 60},
+        "reusable-property-count-range": { "start": 100, "stop": 600},
+        "property-count-range": { "start": 1, "stop": 60},
+        "ref-property-ratio-range": { "start": "1/200", "stop": "1/5"},
+        "service-feature-count-range": { "start": 3, "stop": 10},
+        "service-requirement-count-range": { "start": 1, "stop": 2},
+        "service-requirement-ratio-range": { "start": "1/5", "stop": "1/3"},
+        "max-items-range": { "start": 1, "stop": 1000000},
+        "max-memory-byte-range": { "start": 1000, "stop": 10000000},
+        "proc-micro-sec-range": { "start": 1, "stop": 30},
+        "error-rate-range": { "start": 2, "stop": 8},
+        "timeout-magnitude-range": { "start": 10, "stop": 30},
+        "feature-category-names": ["persistence", "encryption", "metric", "caching", "dashboard", "schema", "search", "export", "json", "versioning", "backup", "failover"],
+        "requirement-category-names": ["unusual-language", "unusual-skill"]
+    },
+    "calculator": {
+        "cost": {
+            "feature-coeff": "1/1",
+            "error-rate-coeff": "1/1",
+            "max-memory-byte-coeff": "1/1"
+        }
+    }
 }

@@ -2,6 +2,7 @@ from fractions import Fraction
 from typing import List, Tuple, Set
 from enum import Enum, auto
 from random import sample, choice, randint, uniform
+from math import log10
 
 class DataPropertyType:
     def __init__(self, datatype: str):
@@ -544,6 +545,9 @@ class DataServiceRepo:
     def get_names(self)->List[str]:
         return list(self.dataservices.keys())
 
+    def get_services(self)->List[DataService]:
+        return list(self.dataservices.values())
+    
     def get_by_name(self, name: str):
         return self.dataservices[name]
 
@@ -772,7 +776,10 @@ class DataSystem:
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
         self.root_service = None
-        
+
+    def get_services(self)->DataService:
+        return self.data_service_repo.get_services()
+
     def add_dataclass_auto(self)->DataClass:
         dataClass = DataClass()
         dataClass.set_name(self.data_class_name_repo.add_next_name())
@@ -872,3 +879,38 @@ class DataSystem:
             self.data_requirement_repo,
             self.root_service
             )
+
+
+class ServiceCost:
+    def __init__(self):
+        self.feature_coeff = Fraction(1, 1)
+        self.error_rate_coeff = Fraction(1, 1)
+        self.max_memory_byte_coeff = Fraction(1, 1)
+
+    def set_feature_coeff(self, value: Fraction):
+        self.feature_coeff = value
+        return self
+
+    def set_error_rate_coeff(self, value: Fraction):
+        self.error_rate_coeff = value
+        return self
+
+    def set_max_memory_byte_coeff(self, value: Fraction):
+        self.max_memory_byte_coeff = value
+        return self
+
+    @classmethod
+    def from_obj(cls, content):
+        calc = cls()
+        calc.set_feature_coeff(Fraction(content["feature-coeff"]))
+        calc.set_error_rate_coeff(Fraction(content["error-rate-coeff"]))
+        calc.set_max_memory_byte_coeff(Fraction(content["max-memory-byte-coeff"]))
+        return calc
+    
+    def __str__(self):
+        return "ServiceCost: feature: {}, error rate {}, memory {}".format(self.feature_coeff, self.error_rate_coeff, self.max_memory_byte_coeff)
+
+    def get_cost(self, service: DataService)->Fraction:
+        higher_is_better = self.feature_coeff*len(service.features) + self.max_memory_byte_coeff*log10(service.max_memory_byte)
+        smaller_is_better = self.error_rate_coeff*service.error_rate
+        return  higher_is_better / smaller_is_better

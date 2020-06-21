@@ -5,7 +5,7 @@ import json
 from fractions import Fraction
 from typing import List, Tuple, Dict, Set
 from random import sample, choice, randint
-from soadata import DataSystem, DataSystemConfig
+from soadata import DataSystem, DataSystemConfig, ServiceCost
 
 if not (sys.version_info.major == 3 and sys.version_info.minor >= 5):
     print("This script requires Python 3.5 or higher!")
@@ -29,10 +29,16 @@ def load_config():
     with open(scriptconfig.config_file, 'r') as jsonfile:
         return json.load(jsonfile)
 
-dataconfig = DataSystemConfig.from_obj(load_config())
+wholeconfig = load_config()
+dataconfig = DataSystemConfig.from_obj(wholeconfig["experiment"])
 print(dataconfig)
+
+serviceCost = ServiceCost.from_obj(wholeconfig["calculator"]["cost"])
 
 for _ in range(dataconfig.datasystem_count):
     dataSystem = DataSystem(dataconfig)
     dataSystem.prepare()
-    print(dataSystem)
+    services = dataSystem.get_services()
+    for service in services:
+        cost = serviceCost.get_cost(service)
+        print(cost)
