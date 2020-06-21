@@ -3,10 +3,6 @@ from typing import List, Tuple, Set
 from enum import Enum, auto
 from random import sample, choice, randint, uniform
 
-def logme(something):
-    print(something)
-    return something
-
 class DataPropertyType:
     def __init__(self, datatype: str):
         self.datatype = datatype
@@ -604,6 +600,7 @@ class DataSystemConfig:
         self.ref_property_ratio_range = RatioRange(Fraction(1, 20), Fraction(2, 20))
         self.service_feature_count_range = RandRange(1, 5)
         self.service_requirement_count_range = RandRange(1, 5)
+        self.service_requirement_ratio_range = RatioRange(Fraction(1, 20), Fraction(2, 20))
         self.max_items_range = RandRange(1, 1000)
         self.max_memory_byte_range = RandRange(1000000, 100000000)
         self.proc_micro_sec_range = RandRange(1, 20)
@@ -638,6 +635,8 @@ class DataSystemConfig:
             str(self.service_feature_count_range),
             "service_requirement_count_range=",
             str(self.service_requirement_count_range),
+            "service_requirement_ratio_range=",
+            str(self.service_requirement_ratio_range),
             "max_items_range=",
             str(self.max_items_range),
             "max_memory_byte_range=",
@@ -669,6 +668,7 @@ class DataSystemConfig:
         config.set_ref_property_ratio_range(RatioRange.from_obj(content["ref-property-ratio-range"]))
         config.set_service_feature_count_range(RandRange.from_obj(content["service-feature-count-range"]))
         config.set_service_requirement_count_range(RandRange.from_obj(content["service-requirement-count-range"]))
+        config.set_service_requirement_ratio_range(RatioRange.from_obj(content["service-requirement-ratio-range"]))
         config.set_max_items_range(RandRange.from_obj(content["max-items-range"]))
         config.set_max_memory_byte_range(RandRange.from_obj(content["max-memory-byte-range"]))
         config.set_proc_micro_sec_range(RandRange.from_obj(content["proc-micro-sec-range"]))
@@ -724,6 +724,10 @@ class DataSystemConfig:
 
     def set_service_requirement_count_range(self, service_requirement_count_range: RandRange):
         self.service_requirement_count_range = service_requirement_count_range
+        return self
+
+    def set_service_requirement_ratio_range(self, service_requirement_ratio_range: RatioRange):
+        self.service_requirement_ratio_range = service_requirement_ratio_range
         return self
 
     def set_max_items_range(self, max_items_range: RandRange):
@@ -797,7 +801,7 @@ class DataSystem:
         self.data_property_name_repo.add_names_auto(self.config.reusable_property_count_range.random())
 
     def add_basic_datafeature_auto(self):
-        for _ in range(logme(self.config.feature_count_range).random()):
+        for _ in range(self.config.feature_count_range.random()):
             dataFeature = self.add_datafeature_auto()
             dataFeature.set_category_name(choice(self.config.feature_category_names))
 
@@ -815,7 +819,10 @@ class DataSystem:
             dataService.set_max_memory_byte(self.config.max_memory_byte_range.random())
             dataService.set_timeout_magnitude(self.config.timeout_magnitude_range.random())
             dataService.set_features([self.data_feature_repo.choice() for _ in range(self.config.service_feature_count_range.random())])
-            dataService.set_requirements([self.data_requirement_repo.choice() for _ in range(self.config.service_requirement_count_range.random())])
+            if self.config.service_requirement_ratio_range.should_activate():
+                dataService.set_requirements([self.data_requirement_repo.choice() for _ in range(self.config.service_requirement_count_range.random())])
+            else:
+                dataService.set_requirements([])
     
     def add_root_service_auto(self):
         self.root_service = self.data_service_repo.get_by_name(choice(self.data_service_repo.get_names()))
