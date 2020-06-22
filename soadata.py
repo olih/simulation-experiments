@@ -2,7 +2,7 @@ from fractions import Fraction
 from typing import List, Tuple, Set
 from enum import Enum, auto
 from random import sample, choice, randint, uniform
-from math import log10
+from math import log
 
 class DataPropertyType:
     def __init__(self, datatype: str):
@@ -911,6 +911,5 @@ class ServiceCost:
         return "ServiceCost: feature: {}, error rate {}, memory {}".format(self.feature_coeff, self.error_rate_coeff, self.max_memory_byte_coeff)
 
     def get_cost(self, service: DataService)->Fraction:
-        higher_is_better = self.feature_coeff*len(service.features) + self.max_memory_byte_coeff*log10(service.max_memory_byte)
-        smaller_is_better = self.error_rate_coeff*service.error_rate
-        return  higher_is_better / smaller_is_better
+        higher_is_better = self.feature_coeff*len(service.features) + self.max_memory_byte_coeff*log(service.max_memory_byte, 5) - self.error_rate_coeff*log(service.error_rate, 10)
+        return  higher_is_better
