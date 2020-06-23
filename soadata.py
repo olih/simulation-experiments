@@ -73,6 +73,12 @@ class DataProperty:
 
     def __hash__(self):
         return hash((self.name, self.datatype, self.min_items, self.max_items))
+
+    def is_ref(self):
+        return self.datatype.is_ref()
+
+    def get_weight(self)->int:
+        return 1 + self.min_items + (self.max_items - self.min_items) // 2
     
 
 class DataClass:
@@ -94,7 +100,7 @@ class DataClass:
         return self
 
     def to_string(self):
-        return "name = {}\n----\n".format(self.name) + "/n".join([str(p) for p in self.properties])
+        return "name = {}\n----\n".format(self.name) + "\n".join([str(p) for p in list(self.properties)])
     
     def __str__(self):
         return self.to_string()
@@ -110,6 +116,15 @@ class DataClass:
     
     def __len__(self):
         return len(self.properties)
+
+    def get_ref_datatypes(self)->Set[DataPropertyType]:
+        return set([p for p in self.properties if p.is_ref])
+
+    def get_simple_datatypes(self)->Set[DataPropertyType]:
+        return set([p for p in self.properties if not p.is_ref])
+
+    def get_weight(self)->int:
+        return sum([p.get_weight() for p in self.properties])
 
 class DataFeature:
     """A feature that can be added to a service"""
@@ -491,6 +506,9 @@ class DataClassRepo:
     def choice(self)->DataClass:
         return self.dataclasses[choice(list(self.dataclasses.keys()))]
 
+    def get_dataclasses(self)->List[DataClass]:
+        return list(self.dataclasses.values())
+
 class DataServiceNameRepo:
     """ These could human readable and are re-used across classes but not necessarily in a consistent manner. Ex: PersonDB, ... """
     def __init__(self):
@@ -776,8 +794,11 @@ class DataSystem:
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
 
-    def get_services(self)->DataService:
+    def get_services(self)->List[DataService]:
         return self.data_service_repo.get_services()
+
+    def get_dataclasses(self)->List[DataClass]:
+        return self.data_class_repo.get_dataclasses()
 
     def add_dataclass_auto(self)->DataClass:
         dataClass = DataClass()
@@ -848,6 +869,7 @@ class DataSystem:
         for name in self.data_class_name_repo.get_names():
             dataClass = DataClass()
             dataClass.set_name(name)
+            self.data_class_repo.add_dataclass(dataClass)
             propertyNames = self.data_property_name_repo.sample(self.config.property_count_range.random())
             for pname in propertyNames:
                 prop = DataProperty()
@@ -876,7 +898,6 @@ class DataSystem:
             self.data_feature_repo,
             self.data_requirement_repo,
             )
-
 
 class ServiceCost:
     def __init__(self):

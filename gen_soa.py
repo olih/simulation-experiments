@@ -39,6 +39,7 @@ for _ in range(dataconfig.datasystem_count):
     dataSystem = DataSystem(dataconfig)
     dataSystem.prepare()
     services = dataSystem.get_services()
-    for service in services:
-        cost = serviceCost.get_cost(service)
-        print(cost)
+    costs = [(service.name, serviceCost.get_cost(service)) for service in services]
+    dataclasses = dataSystem.get_dataclasses()
+    for dataclass in dataclasses:
+        print("name: {}, weight: {}".format(dataclass.name, dataclass.get_weight()))
