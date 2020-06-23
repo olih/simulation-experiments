@@ -775,7 +775,6 @@ class DataSystem:
         self.data_requirement_repo = DataRequirementRepo()
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
-        self.root_service = None
 
     def get_services(self)->DataService:
         return self.data_service_repo.get_services()
@@ -831,9 +830,6 @@ class DataSystem:
             else:
                 dataService.set_requirements([])
     
-    def add_root_service_auto(self):
-        self.root_service = self.data_service_repo.get_by_name(choice(self.data_service_repo.get_names()))
-
     def add_dataclass_names_auto(self):
         for _ in range(self.config.class_count_range.random()):
             self.data_class_name_repo.add_next_name()
@@ -866,21 +862,19 @@ class DataSystem:
         self.add_basic_datafeature_auto()
         self.add_basic_datarequirement_auto()
         self.add_basic_dataservice_auto()
-        self.add_root_service_auto()
         self.add_dataclass_names_auto()
         self.add_datatypes_auto()
         self.add_basic_dataclass_auto()
 
 
     def __str__(self):
-        return "DataSystem: {}, {}, {}, {}, {}, {}, {}".format(
+        return "DataSystem: {}, {}, {}, {}, {}, {}".format(
             self.data_property_type_repo,
             self.data_property_name_repo,
             self.data_class_repo,
             self.data_service_repo,
             self.data_feature_repo,
             self.data_requirement_repo,
-            self.root_service
             )
 
 
