@@ -2,8 +2,8 @@
     "experiment": {
         "title": "",
         "datasystem-count": 100,
-        "datatype-count-range": { "start": 1, "stop": 20},
-        "ref-datatype-ratio-range": { "start": "1/2", "stop": "9/10"},
+        "simple-datatype-count-range": { "start": 1, "stop": 20},
+        "ref-datatype-ratio-range": { "start": "3/2", "stop": "5/1"},
         "class-count-range": { "start": 10, "stop": 60},
         "service-count-range": { "start": 5, "stop": 30},
         "feature-count-range": { "start": 10, "stop": 60},

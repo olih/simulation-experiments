@@ -593,7 +593,7 @@ class RatioRange:
 class DataSystemConfig:
     def __init__(self):
         self.datasystem_count = 50
-        self.datatype_count_range = RandRange(1, 50)
+        self.simple_datatype_count_range = RandRange(1, 50)
         self.ref_datatype_ratio_range = RatioRange(Fraction(1, 20), Fraction(2, 20))
         self.class_count_range = RandRange(1, 50)
         self.service_count_range = RandRange(1, 50)
@@ -617,8 +617,8 @@ class DataSystemConfig:
         return ";".join([
             "datasystem_count=",
             str(self.datasystem_count),
-            "datatype_count_range=",
-            str(self.datatype_count_range),
+            "simple_datatype_count_range=",
+            str(self.simple_datatype_count_range),
             "ref_datatype_ratio_range=",
             str(self.ref_datatype_ratio_range),
             "class_count_range=",
@@ -661,7 +661,7 @@ class DataSystemConfig:
     def from_obj(cls, content):
         config = cls()
         config.set_datasystem_count(int(content["datasystem-count"]))
-        config.set_datatype_count_range(RandRange.from_obj(content["datatype-count-range"]))
+        config.set_simple_datatype_count_range(RandRange.from_obj(content["simple-datatype-count-range"]))
         config.set_ref_datatype_ratio_range(RatioRange.from_obj(content["ref-datatype-ratio-range"]))
         config.set_class_count_range(RandRange.from_obj(content["class-count-range"]))
         config.set_service_count_range(RandRange.from_obj(content["service-count-range"]))
@@ -686,8 +686,8 @@ class DataSystemConfig:
         self.datasystem_count = datasystem_count
         return self
 
-    def set_datatype_count_range(self, datatype_count_range: RandRange):
-        self.datatype_count_range = datatype_count_range
+    def set_simple_datatype_count_range(self, simple_datatype_count_range: RandRange):
+        self.simple_datatype_count_range = simple_datatype_count_range
         return self
 
     def set_ref_datatype_ratio_range(self, ref_datatype_ratio_range: RatioRange):
@@ -839,9 +839,12 @@ class DataSystem:
             self.data_class_name_repo.add_next_name()
 
     def add_datatypes_auto(self):
-        all_count = self.config.datatype_count_range.random()
-        simple_count = self.config.ref_datatype_ratio_range.random_int(all_count)
-        created_types = ["Type{}".format(i) for i in range(simple_count)] + ["{}:{}".format(self.data_service_repo.choice().name, self.data_class_name_repo.choice()) for _ in range(all_count - simple_count)]
+        simple_count = self.config.simple_datatype_count_range.random()
+        simple_types = ["Type{}".format(i) for i in range(simple_count)]
+        min_ref_types = ["{}:{}".format(self.data_service_repo.choice().name, dataclassname) for dataclassname in self.data_class_name_repo.get_names()]
+        ref_count = self.config.ref_datatype_ratio_range.random_int(simple_count) - len(min_ref_types)
+        ref_types = ["{}:{}".format(self.data_service_repo.choice().name, self.data_class_name_repo.choice()) for _ in range(ref_count)]
+        created_types =  simple_types + min_ref_types + ref_types
         self.data_property_type_repo.add_types(created_types)
         self.data_property_type_repo.add_types_as_str("Bool Char Int Float")
 
