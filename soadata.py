@@ -42,6 +42,14 @@ class DataPropertyType:
         else:
             return None
 
+    def match_dataname(self, dataname: str)->bool:
+        if self.is_ref():
+            return self.datatype.split(":")[1] == dataname
+        else:
+            return False
+
+s
+
 intDataPropertyType= DataPropertyType("Int")
 
 class DataProperty:
@@ -638,6 +646,52 @@ class RatioRange:
     def __str__(self):
         return "RatioRange: [{}, {}]".format(self.start, self.stop)
 
+class DataUsage:
+    def __init__(self, datatype: DataPropertyType, uniq_count: int, req_by_day: int):
+        self.datatype = datatype
+        self.uniq_count = uniq_count
+        self.req_by_day = req_by_day
+    
+    def to_string(self):
+        return "DataUsage: datatype: {}, unique: {}, req/day: {}".format(self.datatype, self.uniq_count, self.req_by_day)
+
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+    
+    def __eq__(self, other):
+        return (self.datatype, self.uniq_count, self.req_by_day) == (other.datatype, other.uniq_count, other.req_by_day)
+
+    def __hash__(self):
+        return hash(self.datatype, self.uniq_count, self.req_by_day)
+    
+class DataUsageRepo:
+    """A data class containing a list of data usage """
+    def __init__(self):
+        self.usages = []
+    
+    def set_properties(self, usages: List[DataUsage]):
+        self.usages = usages
+        return self
+    
+    def add(self, usage: DataUsage):
+        self.usages.add(usage)
+        return self
+
+    def to_string(self):
+        return "DataUsageRepo: {}".format(len(self))
+    
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+        
+    def __len__(self):
+        return len(self.usages)
+
 class DataSystemConfig:
     def __init__(self):
         self.datasystem_count = 50
@@ -810,9 +864,8 @@ class DataSystemConfig:
         self.requirement_category_names = category_names
         return self
 
-class DataStat:
-    def __init__(self):
-        self.todo = ""
+
+
 
 class ServiceAndClass:
     def __init__(self, service: DataService, dataclass: DataClass):
@@ -840,6 +893,7 @@ class DataSystem:
         self.data_requirement_repo = DataRequirementRepo()
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
+        self.dataUsageRepo = DataUsageRepo()
 
     def get_services(self)->List[DataService]:
         return self.data_service_repo.get_services()
@@ -856,6 +910,7 @@ class DataSystem:
     def get_unused_ref_datatypes(self)->Set[DataPropertyType]:
         return self.get_all_ref_datatypes().difference(self.get_used_ref_datatypes())
 
+    # TODO adapt for data usage
     def get_ref_types(self)->List[tuple]:
         return [ServiceAndClass(service=self.data_service_repo.get_by_name(rt.get_service_name()), dataclass = self.data_class_repo.get_by_name(rt.get_dataname())) for rt in self.data_property_type_repo.ref_types_as_list()]
  
@@ -938,6 +993,13 @@ class DataSystem:
                 prop.set_datatype(self.data_property_type_repo.random_type(isref=self.config.ref_property_ratio_range.should_activate()))
                 dataClass.add(prop)
 
+    def add_data_usage_auto(self):
+        all = self.get_all_ref_datatypes()
+        datanames = [cl.name for cl in self.data_class_repo.get_dataclasses()]
+        for dataname in datanames:
+            somedatatypes = [dt for dt in all if dt.match_dataname(dataname)]
+            # TODO
+
     def prepare(self):
         self.add_property_names_auto()
         self.add_basic_datafeature_auto()
@@ -959,9 +1021,6 @@ class DataSystem:
             )
 
     
-    def get_stats_by_refdatatype(self, refdatatype: str, limit = 5):
-        return 0
-
 class ServiceCost:
     def __init__(self):
         self.feature_coeff = Fraction(1, 1)
