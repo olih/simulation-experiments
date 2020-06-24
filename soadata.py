@@ -30,6 +30,18 @@ class DataPropertyType:
     def is_ref(self)->bool:
         return ":" in self.datatype
 
+    def get_service_name(self):
+        if self.is_ref():
+            return self.datatype.split(":")[0]
+        else:
+            return None
+    
+    def get_dataname(self):
+        if self.is_ref():
+            return self.datatype.split(":")[1]
+        else:
+            return None
+
 intDataPropertyType= DataPropertyType("Int")
 
 class DataProperty:
@@ -368,7 +380,7 @@ class DataClassNameRepo:
         return list(self.names)
 
     def choice(self)->str:
-        choice(self.get_names())
+        return choice(self.get_names())
 
 
 class DataFeatureNameRepo:
@@ -509,6 +521,13 @@ class DataClassRepo:
     def get_dataclasses(self)->List[DataClass]:
         return list(self.dataclasses.values())
 
+    def get_by_name(self, name: str):
+        try:
+            found = self.dataclasses[name]
+            return found
+        except:
+            raise Exception("No dataclass {} found".format(name))
+
 class DataServiceNameRepo:
     """ These could human readable and are re-used across classes but not necessarily in a consistent manner. Ex: PersonDB, ... """
     def __init__(self):
@@ -567,7 +586,12 @@ class DataServiceRepo:
         return list(self.dataservices.values())
     
     def get_by_name(self, name: str):
-        return self.dataservices[name]
+        try:
+            found = self.dataservices[name]
+            return found
+        except:
+            raise Exception("No service {} found".format(name))
+        
 
     def choice(self)->DataService:
         return self.dataservices[choice(list(self.dataservices.keys()))]
@@ -780,6 +804,23 @@ class DataSystemConfig:
         self.requirement_category_names = category_names
         return self
 
+class DataStat:
+    def __init__(self):
+        self.todo = ""
+
+class ServiceAndClass:
+    def __init__(self, service: DataService, dataclass: DataClass):
+        self.service = service
+        self.dataclass = dataclass
+
+    def to_string(self):
+        return "{} -> {}".format(self.service.name, self.dataclass.name)
+    def __str__(self):
+        return self.to_string()
+
+    def __repr__(self):
+        return self.to_string()
+
 class DataSystem:
     def __init__(self, config: DataSystemConfig):
         self.config = config
@@ -800,6 +841,9 @@ class DataSystem:
     def get_dataclasses(self)->List[DataClass]:
         return self.data_class_repo.get_dataclasses()
 
+    def get_ref_types(self)->List[tuple]:
+        return [ServiceAndClass(service=self.data_service_repo.get_by_name(rt.get_service_name()), dataclass = self.data_class_repo.get_by_name(rt.get_dataname())) for rt in self.data_property_type_repo.ref_types_as_list()]
+ 
     def add_dataclass_auto(self)->DataClass:
         dataClass = DataClass()
         dataClass.set_name(self.data_class_name_repo.add_next_name())
@@ -898,6 +942,10 @@ class DataSystem:
             self.data_feature_repo,
             self.data_requirement_repo,
             )
+
+    
+    def get_stats_by_refdatatype(self, refdatatype: str, limit = 5):
+        return 0
 
 class ServiceCost:
     def __init__(self):
