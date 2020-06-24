@@ -48,8 +48,6 @@ class DataPropertyType:
         else:
             return False
 
-s
-
 intDataPropertyType= DataPropertyType("Int")
 
 class DataProperty:
@@ -677,7 +675,7 @@ class DataUsageRepo:
         return self
     
     def add(self, usage: DataUsage):
-        self.usages.add(usage)
+        self.usages.append(usage)
         return self
 
     def to_string(self):
@@ -698,6 +696,8 @@ class DataSystemConfig:
         self.simple_datatype_count_range = RandRange(1, 50)
         self.ref_datatype_ratio_range = RatioRange(Fraction(1, 20), Fraction(2, 20))
         self.class_count_range = RandRange(1, 50)
+        self.class_instance_count_range = RandRange(1, 50)
+        self.class_req_by_day_count_range = RandRange(1, 50)
         self.service_count_range = RandRange(1, 50)
         self.feature_count_range = RandRange(1, 50)
         self.requirement_count_range = RandRange(1, 50)
@@ -725,6 +725,10 @@ class DataSystemConfig:
             str(self.ref_datatype_ratio_range),
             "class_count_range=",
             str(self.class_count_range),
+            "class_instance_count_range=",
+            str(self.class_instance_count_range),
+            "class_req_by_day_count_range=",
+            str(self.class_req_by_day_count_range),
             "service_count_range=",
             str(self.service_count_range),
             "feature_count_range=",
@@ -766,6 +770,8 @@ class DataSystemConfig:
         config.set_simple_datatype_count_range(RandRange.from_obj(content["simple-datatype-count-range"]))
         config.set_ref_datatype_ratio_range(RatioRange.from_obj(content["ref-datatype-ratio-range"]))
         config.set_class_count_range(RandRange.from_obj(content["class-count-range"]))
+        config.set_class_instance_count_range(RandRange.from_obj(content["class-instance-count-range"]))
+        config.set_class_req_by_day_count_range(RandRange.from_obj(content["class-req-by-day-count-range"]))
         config.set_service_count_range(RandRange.from_obj(content["service-count-range"]))
         config.set_feature_count_range(RandRange.from_obj(content["feature-count-range"]))
         config.set_requirement_count_range(RandRange.from_obj(content["requirement-count-range"]))
@@ -798,6 +804,14 @@ class DataSystemConfig:
 
     def set_class_count_range(self, class_count_range: RandRange):
         self.class_count_range = class_count_range
+        return self
+    
+    def set_class_instance_count_range(self, class_instance_count_range: RandRange):
+        self.class_instance_count_range = class_instance_count_range
+        return self
+
+    def set_class_req_by_day_count_range(self, class_req_by_day_count_range: RandRange):
+        self.class_req_by_day_count_range = class_req_by_day_count_range
         return self
 
     def set_feature_count_range(self, feature_count_range: RandRange):
@@ -893,7 +907,7 @@ class DataSystem:
         self.data_requirement_repo = DataRequirementRepo()
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
-        self.dataUsageRepo = DataUsageRepo()
+        self.data_usage_repo = DataUsageRepo()
 
     def get_services(self)->List[DataService]:
         return self.data_service_repo.get_services()
@@ -994,12 +1008,20 @@ class DataSystem:
                 dataClass.add(prop)
 
     def add_data_usage_auto(self):
+        """ One data-usage by dataclass """
         all = self.get_all_ref_datatypes()
+        used = self.get_used_ref_datatypes()
         datanames = [cl.name for cl in self.data_class_repo.get_dataclasses()]
         for dataname in datanames:
             somedatatypes = [dt for dt in all if dt.match_dataname(dataname)]
-            # TODO
-
+            selected = somedatatypes[0]
+            referenced = set(somedatatypes).intersection(used)
+            if len(referenced) > 0:
+                selected = list(referenced)[0]
+            data_usage = DataUsage(selected, self.config.class_instance_count_range.random(), self.config.class_req_by_day_count_range.random())
+            print(data_usage)
+            self.data_usage_repo.add(data_usage)
+ 
     def prepare(self):
         self.add_property_names_auto()
         self.add_basic_datafeature_auto()
@@ -1008,16 +1030,18 @@ class DataSystem:
         self.add_dataclass_names_auto()
         self.add_datatypes_auto()
         self.add_basic_dataclass_auto()
+        self.add_data_usage_auto()
 
 
     def __str__(self):
-        return "DataSystem: {}, {}, {}, {}, {}, {}".format(
+        return "DataSystem: {}, {}, {}, {}, {}, {}, {}".format(
             self.data_property_type_repo,
             self.data_property_name_repo,
             self.data_class_repo,
             self.data_service_repo,
             self.data_feature_repo,
             self.data_requirement_repo,
+            self.data_usage_repo
             )
 
     

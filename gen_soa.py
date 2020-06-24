@@ -38,7 +38,6 @@ serviceCost = ServiceCost.from_obj(wholeconfig["calculator"]["cost"])
 for _ in range(dataconfig.datasystem_count):
     dataSystem = DataSystem(dataconfig)
     dataSystem.prepare()
-    print("\n\n>>>>",dataSystem.get_used_ref_datatypes())
     # print(dataSystem.get_ref_types())
     exit()
     services = dataSystem.get_services()

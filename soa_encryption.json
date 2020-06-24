@@ -5,6 +5,8 @@
         "simple-datatype-count-range": { "start": 1, "stop": 20},
         "ref-datatype-ratio-range": { "start": "3/2", "stop": "5/1"},
         "class-count-range": { "start": 10, "stop": 60},
+        "class-instance-count-range": { "start": 5, "stop": 10000},
+        "class-req-by-day-count-range": { "start": 5, "stop": 10000},
         "service-count-range": { "start": 5, "stop": 30},
         "feature-count-range": { "start": 10, "stop": 60},
         "requirement-count-range": { "start": 10, "stop": 60},
