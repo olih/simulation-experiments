@@ -645,13 +645,39 @@ class RatioRange:
         return "RatioRange: [{}, {}]".format(self.start, self.stop)
 
 class DataUsage:
-    def __init__(self, datatype: DataPropertyType, uniq_count: int, req_by_day: int):
+    def __init__(self, datatype: DataPropertyType):
         self.datatype = datatype
-        self.uniq_count = uniq_count
-        self.req_by_day = req_by_day
+        self.uniq_count = 1
+        self.req_by_day = 1
+        self.data_storage = 0
+        self.monthly_data_transfer = 0
+        self.processing_time = 0
+
     
     def to_string(self):
-        return "DataUsage: datatype: {}, unique: {}, req/day: {}".format(self.datatype, self.uniq_count, self.req_by_day)
+        return "DataUsage: datatype: {}, unique: {}, req/day: {}, storage: {}, data transfer/month {}".format(self.datatype, self.uniq_count, self.req_by_day, self.data_storage, self.monthly_data_transfer)
+
+    def set_uniq_count(self, uniq_count: int):
+        self.uniq_count = uniq_count
+        return self
+    
+    def set_req_by_day(self, req_by_day: int):
+        self.req_by_day = req_by_day
+        return self
+
+    def set_data_storage(self, data_storage: int):
+        self.data_storage = data_storage
+        return self
+    
+    def set_monthly_data_transfer(self, monthly_data_transfer: int):
+        self.monthly_data_transfer = monthly_data_transfer
+        return self
+
+    def set_data_storage_from_weight(self, weight: int):
+        return self.set_data_storage(self.uniq_count*weight)
+
+    def set_monthly_data_transfer_from_weight(self, weight: int):
+        return self.set_monthly_data_transfer(self.req_by_day*weight*30)
 
     def __str__(self):
         return self.to_string()
@@ -1011,14 +1037,18 @@ class DataSystem:
         """ One data-usage by dataclass """
         all = self.get_all_ref_datatypes()
         used = self.get_used_ref_datatypes()
-        datanames = [cl.name for cl in self.data_class_repo.get_dataclasses()]
-        for dataname in datanames:
-            somedatatypes = [dt for dt in all if dt.match_dataname(dataname)]
+        for cl in self.data_class_repo.get_dataclasses():
+            somedatatypes = [dt for dt in all if dt.match_dataname(cl.name)]
             selected = somedatatypes[0]
             referenced = set(somedatatypes).intersection(used)
             if len(referenced) > 0:
                 selected = list(referenced)[0]
-            data_usage = DataUsage(selected, self.config.class_instance_count_range.random(), self.config.class_req_by_day_count_range.random())
+            data_usage = DataUsage(selected)
+            data_usage.set_uniq_count(self.config.class_instance_count_range.random())
+            data_usage.set_req_by_day(self.config.class_req_by_day_count_range.random())
+            weight = cl.get_weight()
+            data_usage.set_data_storage_from_weight(weight)
+            data_usage.set_monthly_data_transfer_from_weight(weight)
             print(data_usage)
             self.data_usage_repo.add(data_usage)
  
