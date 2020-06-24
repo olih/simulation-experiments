@@ -130,10 +130,10 @@ class DataClass:
         return len(self.properties)
 
     def get_ref_datatypes(self)->Set[DataPropertyType]:
-        return set([p for p in self.properties if p.is_ref])
+        return set([p.datatype for p in self.properties if p.is_ref])
 
     def get_simple_datatypes(self)->Set[DataPropertyType]:
-        return set([p for p in self.properties if not p.is_ref])
+        return set([p.datatype for p in self.properties if not p.is_ref])
 
     def get_weight(self)->int:
         return sum([p.get_weight() for p in self.properties])
@@ -521,6 +521,12 @@ class DataClassRepo:
     def get_dataclasses(self)->List[DataClass]:
         return list(self.dataclasses.values())
 
+    def get_ref_datatypes(self)->Set[DataPropertyType]:
+        aggregate = set([])
+        for cl in self.get_dataclasses():
+          aggregate = aggregate.union(cl.get_ref_datatypes())
+        return aggregate
+        
     def get_by_name(self, name: str):
         try:
             found = self.dataclasses[name]
@@ -840,6 +846,15 @@ class DataSystem:
 
     def get_dataclasses(self)->List[DataClass]:
         return self.data_class_repo.get_dataclasses()
+
+    def get_all_ref_datatypes(self)->Set[DataPropertyType]:
+        return set([rt for rt in self.data_property_type_repo.ref_types_as_list()])
+
+    def get_used_ref_datatypes(self)->Set[DataPropertyType]:
+        return self.data_class_repo.get_ref_datatypes()
+
+    def get_unused_ref_datatypes(self)->Set[DataPropertyType]:
+        return self.get_all_ref_datatypes().difference(self.get_used_ref_datatypes())
 
     def get_ref_types(self)->List[tuple]:
         return [ServiceAndClass(service=self.data_service_repo.get_by_name(rt.get_service_name()), dataclass = self.data_class_repo.get_by_name(rt.get_dataname())) for rt in self.data_property_type_repo.ref_types_as_list()]
