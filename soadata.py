@@ -4,6 +4,13 @@ from enum import Enum, auto
 from random import sample, choice, randint, uniform
 from math import log
 
+def add_magnitude(a: int, b: int)->int:
+    """ Simplification of 2^a+ 2^b"""
+    if a == b:
+        return a + 1
+    else:
+        return max(a, b)
+
 class DataPropertyType:
     def __init__(self, datatype: str):
         self.datatype = datatype
@@ -34,13 +41,13 @@ class DataPropertyType:
         if self.is_ref():
             return self.datatype.split(":")[0]
         else:
-            return None
+            raise Exception("No service name for {}".format(self.datatype))
     
     def get_dataname(self):
         if self.is_ref():
             return self.datatype.split(":")[1]
         else:
-            return None
+            raise Exception("No dataname for {}".format(self.datatype))
 
     def match_dataname(self, dataname: str)->bool:
         if self.is_ref():
@@ -136,10 +143,10 @@ class DataClass:
         return len(self.properties)
 
     def get_ref_datatypes(self)->Set[DataPropertyType]:
-        return set([p.datatype for p in self.properties if p.is_ref])
+        return set([p.datatype for p in self.properties if p.is_ref()])
 
     def get_simple_datatypes(self)->Set[DataPropertyType]:
-        return set([p.datatype for p in self.properties if not p.is_ref])
+        return set([p.datatype for p in self.properties if not p.is_ref()])
 
     def get_weight(self)->int:
         return sum([p.get_weight() for p in self.properties])
@@ -651,11 +658,10 @@ class DataUsage:
         self.req_by_day = 1
         self.data_storage = 0
         self.monthly_data_transfer = 0
-        self.processing_time = 0
-
-    
+        self.processing_magnitude = 0
+  
     def to_string(self):
-        return "DataUsage: datatype: {}, unique: {}, req/day: {}, storage: {}, data transfer/month {}".format(self.datatype, self.uniq_count, self.req_by_day, self.data_storage, self.monthly_data_transfer)
+        return "DataUsage: datatype: {}, unique: {}, req/day: {}, storage: {}, data transfer/month {}, processing: {}".format(self.datatype, self.uniq_count, self.req_by_day, self.data_storage, self.monthly_data_transfer, self.processing_magnitude)
 
     def set_uniq_count(self, uniq_count: int):
         self.uniq_count = uniq_count
@@ -678,6 +684,10 @@ class DataUsage:
 
     def set_monthly_data_transfer_from_weight(self, weight: int):
         return self.set_monthly_data_transfer(self.req_by_day*weight*30)
+
+    def set_processing_magnitude(self, processing_magnitude: int):
+        self.processing_magnitude = processing_magnitude
+        return self
 
     def __str__(self):
         return self.to_string()
@@ -905,8 +915,6 @@ class DataSystemConfig:
         return self
 
 
-
-
 class ServiceAndClass:
     def __init__(self, service: DataService, dataclass: DataClass):
         self.service = service
@@ -919,6 +927,29 @@ class ServiceAndClass:
 
     def __repr__(self):
         return self.to_string()
+
+    @classmethod
+    def from_data_property_type(cls, data_service_repo: DataServiceRepo, data_class_repo: DataClassRepo, proptype: DataPropertyType):
+        return cls(service=data_service_repo.get_by_name(proptype.get_service_name()), dataclass = data_class_repo.get_by_name(proptype.get_dataname()))
+
+    @staticmethod
+    def from_data_property_type_list(data_service_repo: DataServiceRepo, data_class_repo: DataClassRepo, data_prop_type_list: List[DataPropertyType]):
+        return [ServiceAndClass(service=data_service_repo.get_by_name(rt.get_service_name()), dataclass = data_class_repo.get_by_name(rt.get_dataname())) for rt in data_prop_type_list]
+
+MAX_MAGNITUDE = 30
+
+def calculate_magnitude_recursively(data_service_repo: DataServiceRepo, data_class_repo: DataClassRepo, limit: int, magnitude: int, proptype: DataPropertyType):
+        sc = ServiceAndClass.from_data_property_type(data_service_repo, data_class_repo, proptype)
+        new_magnitude = add_magnitude(magnitude, sc.service.processing_magnitude)
+        if len(sc.dataclass.get_ref_datatypes()) == 0:
+            return new_magnitude
+        elif limit <= 0:
+            return MAX_MAGNITUDE
+        else:
+            child_magnitudes = [ calculate_magnitude_recursively(data_service_repo, data_class_repo,limit = limit -1, magnitude = magnitude, proptype = dt ) for dt in sc.dataclass.get_ref_datatypes()]
+            worse_magnitude = max(child_magnitudes)
+            return worse_magnitude
+                
 
 class DataSystem:
     def __init__(self, config: DataSystemConfig):
@@ -950,10 +981,6 @@ class DataSystem:
     def get_unused_ref_datatypes(self)->Set[DataPropertyType]:
         return self.get_all_ref_datatypes().difference(self.get_used_ref_datatypes())
 
-    # TODO adapt for data usage
-    def get_ref_types(self)->List[tuple]:
-        return [ServiceAndClass(service=self.data_service_repo.get_by_name(rt.get_service_name()), dataclass = self.data_class_repo.get_by_name(rt.get_dataname())) for rt in self.data_property_type_repo.ref_types_as_list()]
- 
     def add_dataclass_auto(self)->DataClass:
         dataClass = DataClass()
         dataClass.set_name(self.data_class_name_repo.add_next_name())
@@ -1049,6 +1076,7 @@ class DataSystem:
             weight = cl.get_weight()
             data_usage.set_data_storage_from_weight(weight)
             data_usage.set_monthly_data_transfer_from_weight(weight)
+            data_usage.set_processing_magnitude(calculate_magnitude_recursively(self.data_service_repo, self.data_class_repo, limit = 6, magnitude = 0, proptype=selected))
             print(data_usage)
             self.data_usage_repo.add(data_usage)
  
