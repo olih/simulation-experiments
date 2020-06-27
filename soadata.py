@@ -2,6 +2,7 @@ from fractions import Fraction
 from typing import List, Tuple, Set
 from enum import Enum, auto
 from random import sample, choice, randint, uniform
+from collections import Counter
 from math import log
 
 def add_magnitude(a: int, b: int)->int:
@@ -662,6 +663,8 @@ class DataUsage:
         self.processing_magnitude = 0
         self.service_cost = Fraction(0, 1) 
         self.crashes = set([])
+        self.feature_categories = []
+        self.requirement_categories = []
   
     def to_string(self):
         return "DataUsage: datatype: {}, unique: {}, req/day: {}, weight (kB): {}, storage (GB): {}, data transfer/month (GB) {}, processing: {}, service cost: {}, crashes: {}".format(self.datatype, self.uniq_count, self.req_by_day, self.weight // 1000, self.data_storage // 1000000000, self.monthly_data_transfer // 1000000000, self.processing_magnitude, self.service_cost, sorted(list(self.crashes)))
@@ -704,6 +707,12 @@ class DataUsage:
         self.crashes.add(crash)
         return self
 
+    def set_feature_categories(self, feature_categories: List[str]):
+        self.feature_categories = feature_categories
+
+    def set_requirement_categories(self, requirement_categories: List[str]):
+        self.requirement_categories = requirement_categories
+
     def __str__(self):
         return self.to_string()
     
@@ -720,7 +729,13 @@ class DataUsageOverview:
     """A data class containing a list of data usage """
     def __init__(self):
         self.usages = []
-        self.summary_usage = DataUsage(None)
+        self.data_storage = 0
+        self.monthly_data_transfer = 0
+        self.processing_magnitude = 0
+        self.service_cost = Fraction(0, 1)
+        self.crashes = set([])
+        self.feature_categories = Counter()
+        self.requirement_categories = Counter()
     
     def set_properties(self, usages: List[DataUsage]):
         self.usages = usages
@@ -731,7 +746,15 @@ class DataUsageOverview:
         return self
 
     def to_string(self):
-        return "DataUsageOverview: {}".format(len(self))
+        return "DataUsageOverview: {}, data storage (GB): {}, monthly data transfer (GB): {}, cost: {}, crashes: {}, features: {}, requirements: {}".format(
+            len(self)
+            , self.data_storage // 1000000000
+            , self.monthly_data_transfer // 1000000000
+            , self.service_cost
+            , list(self.crashes)
+            , self.feature_categories
+            , self.requirement_categories
+            )
     
     def __str__(self):
         return self.to_string()
@@ -743,17 +766,20 @@ class DataUsageOverview:
         return len(self.usages)
 
     def summarise(self):
+        features = []
+        requirements = []
         for usage in self.usages:
-            self.summary_usage.data_storage += usage.data_storage
-            self.summary_usage.monthly_data_transfer += usage.monthly_data_transfer
-            self.summary_usage.processing_magnitude = max(self.summary_usage.processing_magnitude, usage.processing_magnitude)
-            self.summary_usage.service_cost += usage.service_cost
-            self.summary_usage.crashes = self.summary_usage.crashes.union(usage.crashes)
-
-    def get_summary(self):
-        self.summarise()
-        print(self.summary_usage)
-        return []
+            self.data_storage += usage.data_storage
+            self.monthly_data_transfer += usage.monthly_data_transfer
+            self.processing_magnitude = max(self.processing_magnitude, usage.processing_magnitude)
+            self.service_cost += usage.service_cost
+            self.crashes = self.crashes.union(usage.crashes)
+            features += usage.feature_categories
+            requirements += usage.requirement_categories
+        self.feature_categories = Counter(features)
+        self.requirement_categories = Counter(requirements)
+       
+        print(self)
 
 class DataSystemConfig:
     def __init__(self):
@@ -1145,6 +1171,8 @@ class DataSystem:
             data_usage.set_monthly_data_transfer_from_weight(weight)
             data_usage.set_processing_magnitude(calculate_magnitude_recursively(self.data_service_repo, self.data_class_repo, limit = 6, magnitude = 0, proptype=selected))
             data_usage.set_service_cost(self.service_cost.get_cost(sc.service))
+            data_usage.set_feature_categories([feat.category_name for feat in sc.service.features])
+            data_usage.set_requirement_categories([req.category_name for req in sc.service.requirements])
             if data_usage.processing_magnitude >= sc.service.timeout_magnitude:
                 data_usage.add_crash("timeout")
             self.data_usage_overview.add(data_usage)
@@ -1168,5 +1196,5 @@ class DataSystem:
             self.data_service_repo,
             self.data_feature_repo,
             self.data_requirement_repo,
-            self.data_usage_repo
+            self.data_usage_overview
             )
