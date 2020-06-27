@@ -656,12 +656,15 @@ class DataUsage:
         self.datatype = datatype
         self.uniq_count = 1
         self.req_by_day = 1
+        self.weight = 0
         self.data_storage = 0
         self.monthly_data_transfer = 0
         self.processing_magnitude = 0
+        self.service_cost = Fraction(0, 1) 
+        self.crashes = set([])
   
     def to_string(self):
-        return "DataUsage: datatype: {}, unique: {}, req/day: {}, storage: {}, data transfer/month {}, processing: {}".format(self.datatype, self.uniq_count, self.req_by_day, self.data_storage, self.monthly_data_transfer, self.processing_magnitude)
+        return "DataUsage: datatype: {}, unique: {}, req/day: {}, weight (kB): {}, storage (GB): {}, data transfer/month (GB) {}, processing: {}, service cost: {}, crashes: {}".format(self.datatype, self.uniq_count, self.req_by_day, self.weight // 1000, self.data_storage // 1000000000, self.monthly_data_transfer // 1000000000, self.processing_magnitude, self.service_cost, sorted(list(self.crashes)))
 
     def set_uniq_count(self, uniq_count: int):
         self.uniq_count = uniq_count
@@ -669,6 +672,10 @@ class DataUsage:
     
     def set_req_by_day(self, req_by_day: int):
         self.req_by_day = req_by_day
+        return self
+
+    def set_weight(self, weight: int):
+        self.weight = weight
         return self
 
     def set_data_storage(self, data_storage: int):
@@ -687,6 +694,14 @@ class DataUsage:
 
     def set_processing_magnitude(self, processing_magnitude: int):
         self.processing_magnitude = processing_magnitude
+        return self
+
+    def set_service_cost(self, service_cost: Fraction):
+        self.service_cost = service_cost
+        return self
+
+    def add_crash(self, crash: str):
+        self.crashes.add(crash)
         return self
 
     def __str__(self):
@@ -950,10 +965,43 @@ def calculate_magnitude_recursively(data_service_repo: DataServiceRepo, data_cla
             worse_magnitude = max(child_magnitudes)
             return worse_magnitude
                 
+class ServiceCost:
+    def __init__(self):
+        self.feature_coeff = Fraction(1, 1)
+        self.error_rate_coeff = Fraction(1, 1)
+        self.max_memory_byte_coeff = Fraction(1, 1)
+
+    def set_feature_coeff(self, value: Fraction):
+        self.feature_coeff = value
+        return self
+
+    def set_error_rate_coeff(self, value: Fraction):
+        self.error_rate_coeff = value
+        return self
+
+    def set_max_memory_byte_coeff(self, value: Fraction):
+        self.max_memory_byte_coeff = value
+        return self
+
+    @classmethod
+    def from_obj(cls, content):
+        calc = cls()
+        calc.set_feature_coeff(Fraction(content["feature-coeff"]))
+        calc.set_error_rate_coeff(Fraction(content["error-rate-coeff"]))
+        calc.set_max_memory_byte_coeff(Fraction(content["max-memory-byte-coeff"]))
+        return calc
+    
+    def __str__(self):
+        return "ServiceCost: feature: {}, error rate {}, memory {}".format(self.feature_coeff, self.error_rate_coeff, self.max_memory_byte_coeff)
+
+    def get_cost(self, service: DataService)->Fraction:
+        higher_is_better = self.feature_coeff*len(service.features) + self.max_memory_byte_coeff*log(service.max_memory_byte, 5) - self.error_rate_coeff*log(service.error_rate, 10)
+        return  higher_is_better
 
 class DataSystem:
-    def __init__(self, config: DataSystemConfig):
+    def __init__(self, config: DataSystemConfig, service_cost: ServiceCost):
         self.config = config
+        self.service_cost = service_cost
         self.data_property_type_repo = DataPropertyTypeRepo()
         self.data_property_name_repo = DataPropertyNameRepo()
         self.data_class_name_repo = DataClassNameRepo()
@@ -981,6 +1029,9 @@ class DataSystem:
     def get_unused_ref_datatypes(self)->Set[DataPropertyType]:
         return self.get_all_ref_datatypes().difference(self.get_used_ref_datatypes())
 
+    def get_usages(self)-> List[DataUsage]:
+        return self.data_usage_repo.usages
+    
     def add_dataclass_auto(self)->DataClass:
         dataClass = DataClass()
         dataClass.set_name(self.data_class_name_repo.add_next_name())
@@ -1067,6 +1118,7 @@ class DataSystem:
         for cl in self.data_class_repo.get_dataclasses():
             somedatatypes = [dt for dt in all if dt.match_dataname(cl.name)]
             selected = somedatatypes[0]
+            sc = ServiceAndClass.from_data_property_type(self.data_service_repo, self.data_class_repo, selected)
             referenced = set(somedatatypes).intersection(used)
             if len(referenced) > 0:
                 selected = list(referenced)[0]
@@ -1074,10 +1126,13 @@ class DataSystem:
             data_usage.set_uniq_count(self.config.class_instance_count_range.random())
             data_usage.set_req_by_day(self.config.class_req_by_day_count_range.random())
             weight = cl.get_weight()
+            data_usage.set_weight(weight)
             data_usage.set_data_storage_from_weight(weight)
             data_usage.set_monthly_data_transfer_from_weight(weight)
             data_usage.set_processing_magnitude(calculate_magnitude_recursively(self.data_service_repo, self.data_class_repo, limit = 6, magnitude = 0, proptype=selected))
-            print(data_usage)
+            data_usage.set_service_cost(self.service_cost.get_cost(sc.service))
+            if data_usage.processing_magnitude >= sc.service.timeout_magnitude:
+                data_usage.add_crash("timeout")
             self.data_usage_repo.add(data_usage)
  
     def prepare(self):
@@ -1101,37 +1156,3 @@ class DataSystem:
             self.data_requirement_repo,
             self.data_usage_repo
             )
-
-    
-class ServiceCost:
-    def __init__(self):
-        self.feature_coeff = Fraction(1, 1)
-        self.error_rate_coeff = Fraction(1, 1)
-        self.max_memory_byte_coeff = Fraction(1, 1)
-
-    def set_feature_coeff(self, value: Fraction):
-        self.feature_coeff = value
-        return self
-
-    def set_error_rate_coeff(self, value: Fraction):
-        self.error_rate_coeff = value
-        return self
-
-    def set_max_memory_byte_coeff(self, value: Fraction):
-        self.max_memory_byte_coeff = value
-        return self
-
-    @classmethod
-    def from_obj(cls, content):
-        calc = cls()
-        calc.set_feature_coeff(Fraction(content["feature-coeff"]))
-        calc.set_error_rate_coeff(Fraction(content["error-rate-coeff"]))
-        calc.set_max_memory_byte_coeff(Fraction(content["max-memory-byte-coeff"]))
-        return calc
-    
-    def __str__(self):
-        return "ServiceCost: feature: {}, error rate {}, memory {}".format(self.feature_coeff, self.error_rate_coeff, self.max_memory_byte_coeff)
-
-    def get_cost(self, service: DataService)->Fraction:
-        higher_is_better = self.feature_coeff*len(service.features) + self.max_memory_byte_coeff*log(service.max_memory_byte, 5) - self.error_rate_coeff*log(service.error_rate, 10)
-        return  higher_is_better
