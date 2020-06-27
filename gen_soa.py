@@ -38,6 +38,5 @@ serviceCost = ServiceCost.from_obj(wholeconfig["calculator"]["cost"])
 for _ in range(dataconfig.datasystem_count):
     dataSystem = DataSystem(dataconfig, service_cost = serviceCost)
     dataSystem.prepare()
-    for usage in dataSystem.get_usages():
-        print(usage)
+    print(dataSystem.get_usage_overview().get_summary())
     exit() # TODO delete this line

@@ -716,10 +716,11 @@ class DataUsage:
     def __hash__(self):
         return hash(self.datatype, self.uniq_count, self.req_by_day)
     
-class DataUsageRepo:
+class DataUsageOverview:
     """A data class containing a list of data usage """
     def __init__(self):
         self.usages = []
+        self.summary_usage = DataUsage(None)
     
     def set_properties(self, usages: List[DataUsage]):
         self.usages = usages
@@ -730,7 +731,7 @@ class DataUsageRepo:
         return self
 
     def to_string(self):
-        return "DataUsageRepo: {}".format(len(self))
+        return "DataUsageOverview: {}".format(len(self))
     
     def __str__(self):
         return self.to_string()
@@ -740,6 +741,19 @@ class DataUsageRepo:
         
     def __len__(self):
         return len(self.usages)
+
+    def summarise(self):
+        for usage in self.usages:
+            self.summary_usage.data_storage += usage.data_storage
+            self.summary_usage.monthly_data_transfer += usage.monthly_data_transfer
+            self.summary_usage.processing_magnitude = max(self.summary_usage.processing_magnitude, usage.processing_magnitude)
+            self.summary_usage.service_cost += usage.service_cost
+            self.summary_usage.crashes = self.summary_usage.crashes.union(usage.crashes)
+
+    def get_summary(self):
+        self.summarise()
+        print(self.summary_usage)
+        return []
 
 class DataSystemConfig:
     def __init__(self):
@@ -1012,7 +1026,7 @@ class DataSystem:
         self.data_requirement_repo = DataRequirementRepo()
         self.data_service_name_repo = DataServiceNameRepo()
         self.data_service_repo = DataServiceRepo()
-        self.data_usage_repo = DataUsageRepo()
+        self.data_usage_overview = DataUsageOverview()
 
     def get_services(self)->List[DataService]:
         return self.data_service_repo.get_services()
@@ -1029,8 +1043,8 @@ class DataSystem:
     def get_unused_ref_datatypes(self)->Set[DataPropertyType]:
         return self.get_all_ref_datatypes().difference(self.get_used_ref_datatypes())
 
-    def get_usages(self)-> List[DataUsage]:
-        return self.data_usage_repo.usages
+    def get_usage_overview(self)-> DataUsageOverview:
+        return self.data_usage_overview
     
     def add_dataclass_auto(self)->DataClass:
         dataClass = DataClass()
@@ -1133,7 +1147,7 @@ class DataSystem:
             data_usage.set_service_cost(self.service_cost.get_cost(sc.service))
             if data_usage.processing_magnitude >= sc.service.timeout_magnitude:
                 data_usage.add_crash("timeout")
-            self.data_usage_repo.add(data_usage)
+            self.data_usage_overview.add(data_usage)
  
     def prepare(self):
         self.add_property_names_auto()
