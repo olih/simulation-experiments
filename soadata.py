@@ -658,7 +658,6 @@ class DataUsage:
         self.uniq_count = 1
         self.req_by_day = 1
         self.weight = 0
-        self.data_storage = 0
         self.monthly_data_transfer = 0
         self.processing_magnitude = 0
         self.service_cost = Fraction(0, 1) 
@@ -667,7 +666,7 @@ class DataUsage:
         self.requirement_categories = []
   
     def to_string(self):
-        return "DataUsage: datatype: {}, unique: {}, req/day: {}, weight (kB): {}, storage (GB): {}, data transfer/month (GB) {}, processing: {}, service cost: {}, crashes: {}".format(self.datatype, self.uniq_count, self.req_by_day, self.weight // 1000, self.data_storage // 1000000000, self.monthly_data_transfer // 1000000000, self.processing_magnitude, self.service_cost, sorted(list(self.crashes)))
+        return "DataUsage: datatype: {}, unique: {}, req/day: {}, weight (kB): {}, storage (GB): {}, data transfer/month (GB) {}, processing: {}, service cost: {}, crashes: {}".format(self.datatype, self.uniq_count, self.req_by_day, self.weight // 1000, self.get_weighted_data_storage() // 1000000000, self.get_monthly_weighted_data_transfer() // 1000000000, self.processing_magnitude, self.service_cost, sorted(list(self.crashes)))
 
     def set_uniq_count(self, uniq_count: int):
         self.uniq_count = uniq_count
@@ -680,20 +679,16 @@ class DataUsage:
     def set_weight(self, weight: int):
         self.weight = weight
         return self
-
-    def set_data_storage(self, data_storage: int):
-        self.data_storage = data_storage
-        return self
     
     def set_monthly_data_transfer(self, monthly_data_transfer: int):
         self.monthly_data_transfer = monthly_data_transfer
         return self
 
-    def set_data_storage_from_weight(self, weight: int):
-        return self.set_data_storage(self.uniq_count*weight)
+    def get_weighted_data_storage(self)->int:
+        return self.uniq_count*self.weight
 
-    def set_monthly_data_transfer_from_weight(self, weight: int):
-        return self.set_monthly_data_transfer(self.req_by_day*weight*30)
+    def get_monthly_weighted_data_transfer(self):
+        return self.req_by_day*self.weight*30
 
     def set_processing_magnitude(self, processing_magnitude: int):
         self.processing_magnitude = processing_magnitude
@@ -702,6 +697,9 @@ class DataUsage:
     def set_service_cost(self, service_cost: Fraction):
         self.service_cost = service_cost
         return self
+
+    def get_weighted_service_cost(self):
+        return self.service_cost*self.req_by_day
 
     def add_crash(self, crash: str):
         self.crashes.add(crash)
@@ -769,10 +767,10 @@ class DataUsageOverview:
         features = []
         requirements = []
         for usage in self.usages:
-            self.data_storage += usage.data_storage
-            self.monthly_data_transfer += usage.monthly_data_transfer
+            self.data_storage += usage.get_weighted_data_storage()
+            self.monthly_data_transfer += usage.get_monthly_weighted_data_transfer()
             self.processing_magnitude = max(self.processing_magnitude, usage.processing_magnitude)
-            self.service_cost += usage.service_cost
+            self.service_cost += usage.get_weighted_service_cost()
             self.crashes = self.crashes.union(usage.crashes)
             features += usage.feature_categories
             requirements += usage.requirement_categories
@@ -1167,8 +1165,6 @@ class DataSystem:
             data_usage.set_req_by_day(self.config.class_req_by_day_count_range.random())
             weight = cl.get_weight()
             data_usage.set_weight(weight)
-            data_usage.set_data_storage_from_weight(weight)
-            data_usage.set_monthly_data_transfer_from_weight(weight)
             data_usage.set_processing_magnitude(calculate_magnitude_recursively(self.data_service_repo, self.data_class_repo, limit = 6, magnitude = 0, proptype=selected))
             data_usage.set_service_cost(self.service_cost.get_cost(sc.service))
             data_usage.set_feature_categories([feat.category_name for feat in sc.service.features])
