@@ -1,2 +1,5 @@
-# simulation_experiments
-Experiments with simulations
+# Simulation Experiments
+
+A few experiments with simulations in python.
+
+Not stable yet.

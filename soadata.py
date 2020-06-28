@@ -1,0 +1,1204 @@
+from fractions import Fraction
+from typing import List, Tuple, Set
+from enum import Enum, auto
+from random import sample, choice, randint, uniform
+from collections import Counter
+from math import log, floor, ceil
+
+def add_magnitude(a: int, b: int)->int:
+    """ Simplification of 2^a+ 2^b"""
+    if a == b:
+        return a + 1
+    else:
+        return max(a, b)
+
+class DataPropertyType:
+    def __init__(self, datatype: str):
+        self.datatype = datatype
+    
+    @classmethod
+    def from_ref_datatype(cls, servicename: str, dataname: str):
+        return cls(servicename + ":" + dataname)
+    
+    def to_string(self):
+        return self.datatype
+
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+    
+    def __eq__(self, other):
+        return self.datatype == other.datatype
+
+    def __hash__(self):
+        return hash(self.datatype)
+    
+    def is_ref(self)->bool:
+        return ":" in self.datatype
+
+    def get_service_name(self):
+        if self.is_ref():
+            return self.datatype.split(":")[0]
+        else:
+            raise Exception("No service name for {}".format(self.datatype))
+    
+    def get_dataname(self):
+        if self.is_ref():
+            return self.datatype.split(":")[1]
+        else:
+            raise Exception("No dataname for {}".format(self.datatype))
+
+    def match_dataname(self, dataname: str)->bool:
+        if self.is_ref():
+            return self.datatype.split(":")[1] == dataname
+        else:
+            return False
+
+intDataPropertyType= DataPropertyType("Int")
+
+class DataProperty:
+    """A property
+    Example: colors : Int[3, 3] """
+    def __init__(self):
+        self.name = ""
+        self.datatype = intDataPropertyType
+        self.min_items = 0
+        self.max_items = 1
+    
+    def set_name(self, name: str):
+        self.name = name
+        return self
+    
+    def set_datatype(self, datatype: DataPropertyType):
+        self.datatype = datatype
+        return self
+    
+    def set_min_items(self, min_items: int):
+        self.min_items = min_items
+        return self
+
+    def set_max_items(self, max_items: int):
+        self.max_items = max_items
+        return self
+
+    def to_string(self):
+        return "{} : {} [{}, {}]".format(self.name, self.datatype, self.min_items, self.max_items)
+
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+
+    def __eq__(self, other):
+        thisone = (self.name, self.datatype, self.min_items, self.max_items)
+        otherone = (other.name, other.datatype, other.min_items, other.max_items)
+        return thisone == otherone
+
+    def __hash__(self):
+        return hash((self.name, self.datatype, self.min_items, self.max_items))
+
+    def is_ref(self):
+        return self.datatype.is_ref()
+
+    def get_weight(self)->int:
+        return 1 + self.min_items + (self.max_items - self.min_items) // 2
+    
+
+class DataClass:
+    """A data class containing a list of properties """
+    def __init__(self):
+        self.name = ""
+        self.properties = set([])
+
+    def set_name(self, name: str):
+        self.name = name
+        return self
+
+    def set_properties(self, props: Set[DataProperty]):
+        self.properties = props
+        return self
+    
+    def add(self, prop: DataProperty):
+        self.properties.add(prop)
+        return self
+
+    def to_string(self):
+        return "name = {}\n----\n".format(self.name) + "\n".join([str(p) for p in list(self.properties)])
+    
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+    
+    def __eq__(self, other):
+        return (self.name, self.properties) == (other.name, other.properties)
+    
+    def __hash__(self):
+        return hash((self.name, self.properties))
+    
+    def __len__(self):
+        return len(self.properties)
+
+    def get_ref_datatypes(self)->Set[DataPropertyType]:
+        return set([p.datatype for p in self.properties if p.is_ref()])
+
+    def get_simple_datatypes(self)->Set[DataPropertyType]:
+        return set([p.datatype for p in self.properties if not p.is_ref()])
+
+    def get_weight(self)->int:
+        return sum([p.get_weight() for p in self.properties])
+
+class DataFeature:
+    """A feature that can be added to a service"""
+    def __init__(self):
+        self.name = ""
+        self.category_name = "default"
+    
+    def set_name(self, name: str):
+        self.name = name
+        return self
+
+    def set_category_name(self, category_name: str):
+        self.category_name = category_name
+        return self
+    
+    def to_string(self):
+        return "DataFeature: {}, category: {}".format(self.name, self.category_name)
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+
+    def __eq__(self, other):
+        return (self.name, self.category_name) == (other.name, other.category_name)
+    
+    def __hash__(self):
+        return hash((self.name, self.category_name))
+
+class DataRequirement:
+    """A requirement that are needed for the service"""
+    def __init__(self):
+        self.name = ""
+        self.category_name = "default"
+    
+    def set_name(self, name: str):
+        self.name = name
+        return self
+
+    def set_category_name(self, category_name: str):
+        self.category_name = category_name
+        return self
+    
+    def to_string(self):
+        return "DataRequirement: {}, category: {}".format(self.name, self.category_name)
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+
+    def __eq__(self, other):
+        return (self.name, self.category_name) == (other.name, other.category_name)
+    
+    def __hash__(self):
+        return hash((self.name, self.category_name))
+
+class DataService:
+    """A data service attached to a service """
+    def __init__(self):
+        self.name = ""
+        self.processing_magnitude = 1
+        self.error_processing_magnitude = 1
+        self.error_rate = Fraction(1,1000000)
+        self.max_memory_byte = 100000
+        self.timeout_magnitude = 27
+        self.features = []
+
+    def set_name(self, name: str):
+        self.name = name
+        return self
+    
+    def set_processing_magnitude(self, processing_magnitude: int):
+        self.processing_magnitude = processing_magnitude
+        return self
+
+    def set_error_processing_magnitude(self, error_processing_magnitude: int):
+        self.error_processing_magnitude = error_processing_magnitude
+        return self
+
+    def set_error_rate(self, error_rate: Fraction):
+        self.error_rate = error_rate
+        return self
+
+    def set_max_memory_byte(self, max_memory_byte: int):
+        self.max_memory_byte = max_memory_byte
+        return self
+
+    def set_timeout_magnitude(self, timeout_magnitude):
+        self.timeout_magnitude = timeout_magnitude
+        return self
+
+    def set_features(self, features: List[DataFeature]):
+        self.features = features
+        return self
+
+    def set_requirements(self, requirements: List[DataRequirement]):
+        self.requirements = requirements
+        return self
+
+    def to_string(self):
+        return "Service {}: processing_magnitude = {}, error_processing_magnitude = {}, timeout_magnitude {}, error_rate = {}, memory(bytes) {}, features: {}, requirements: {}".format(
+            self.name,
+            self.processing_magnitude, 
+            self.error_processing_magnitude,
+            self.timeout_magnitude,
+            self.error_rate,
+            self.max_memory_byte,
+            len(self.features),
+            len(self.requirements)
+            )
+    
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+
+    def __eq__(self, other):
+        return (self.name, self.processing_magnitude) == (other.name, other.processing_magnitude)
+ 
+    def __hash__(self):
+        return hash((self.name, self.processing_magnitude))
+
+    def rand_error_rate(self)->bool:
+        """ Return true if the error rate has been triggered"""
+        alea = randint(1, self.error_rate.denominator)
+        return alea <= self.error_rate.numerator
+
+class DataPropertyTypeRepo:
+    def __init__(self):
+        self.simple_store = set([])
+        self.ref_store = set([])
+    
+    def add(self, dataPropertyType: DataPropertyType):
+        if (dataPropertyType.is_ref()):
+            self.ref_store.add(dataPropertyType)
+        else:
+            self.simple_store.add(dataPropertyType)
+        return self
+    
+    def discard(self, dataPropertyType: DataPropertyType):
+        if (dataPropertyType.is_ref()):
+            self.ref_store.discard(dataPropertyType)
+        else:
+            self.simple_store.discard(dataPropertyType)
+        return self
+    
+    def __len__(self):
+        return len(self.simple_store) + len(self.ref_store)
+
+    def __str__(self):
+        return "DataPropertyTypeRepo: size {}".format(len(self))
+
+    def has(self, dataPropertyType: DataPropertyType)->bool:
+        return dataPropertyType in self.simple_store or dataPropertyType in self.ref_store
+
+    def add_types(self, types: List[str]):
+        for t in types:
+            self.add(DataPropertyType(t))
+        return self
+
+    def add_types_as_str(self, types: str):
+        return self.add_types(types.split(" "))
+
+    def simple_types_as_list(self):
+        return list(self.simple_store)
+
+    def random_simple_type(self)->DataPropertyType:
+        return choice(self.simple_types_as_list())
+
+    def ref_types_as_list(self):
+        return list(self.ref_store)
+
+    def random_ref_type(self)->DataPropertyType:
+        return choice(self.ref_types_as_list())
+
+    def random_type(self, isref: bool)->DataPropertyType:
+        return self.random_ref_type() if isref else self.random_simple_type()
+
+class DataPropertyNameRepo:
+    """ These are usually human readable and are re-used across classes but not necessarily in a consistent manner. Ex: name, description, ... """
+    def __init__(self):
+        self.counter = 0
+        self.names = set([])
+    
+    def add_name(self, name: str):
+        self.names.add(name)
+        return name
+
+    def add_next_name(self):
+        self.counter = self.counter + 1
+        return self.add_name("Name{}".format(self.counter))
+
+    def add_names_auto(self, count: int):
+        for _ in range(count):
+            self.add_next_name()
+        return self
+
+    def __len__(self):
+        return len(self.names)
+
+    def __str__(self):
+        return "DataPropertyNameRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.names
+
+    def sample(self, count: int)->List[str]:
+        return sample(list(self.names), count)
+
+class DataClassNameRepo:
+    """ These are usually human readable and are re-used across classes but not necessarily in a consistent manner. Ex: Person, ... """
+    def __init__(self):
+        self.counter = 0
+        self.names = set([])
+    
+    def add_name(self, name: str):
+        self.names.add(name)
+        return name
+
+    def add_next_name(self):
+        self.counter = self.counter + 1
+        return self.add_name("ClassName{}".format(self.counter))
+
+    def add_names_auto(self, count: int):
+        for i in range(count):
+            self.add_next_name()
+        return self
+
+    def __len__(self):
+        return len(self.names)
+
+    def __str__(self):
+        return "DataClassNameRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.names
+
+    def get_names(self)->List[str]:
+        return list(self.names)
+
+    def choice(self)->str:
+        return choice(self.get_names())
+
+
+class DataFeatureNameRepo:
+    """ These could human readable and are re-used across classes but not necessarily in a consistent manner. Ex: persistence1, ... """
+    def __init__(self):
+        self.counter = 0
+        self.names = set([])
+    
+    def add_name(self, name: str):
+        self.names.add(name)
+        return name
+
+    def add_next_name(self):
+        self.counter = self.counter + 1
+        return self.add_name("Feature{}".format(self.counter))
+
+    def add_names_auto(self, count: int):
+        for i in range(count):
+            self.add_next_name()
+        return self
+
+    def __len__(self):
+        return len(self.names)
+
+    def __str__(self):
+        return "DataFeatureNameRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.names
+
+class DataRequirementNameRepo:
+    """ These could human readable and are re-used across classes but not necessarily in a consistent manner. Ex: persistence1, ... """
+    def __init__(self):
+        self.counter = 0
+        self.names = set([])
+    
+    def add_name(self, name: str):
+        self.names.add(name)
+        return name
+
+    def add_next_name(self):
+        self.counter = self.counter + 1
+        return self.add_name("Requirement{}".format(self.counter))
+
+    def add_names_auto(self, count: int):
+        for i in range(count):
+            self.add_next_name()
+        return self
+
+    def __len__(self):
+        return len(self.names)
+
+    def __str__(self):
+        return "DataRequirementNameRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.names
+
+
+class DataFeatureRepo:
+    """  Store a feature """
+    def __init__(self):
+        self.features = {}
+    
+    def add_datafeature(self, datafeature: DataFeature):
+        self.features[datafeature.name] = datafeature
+        return self
+
+    def remove_datafeature(self, datafeature: DataFeature):
+        if datafeature.name in self.features:
+            del self.features[datafeature.name]
+        return self
+
+    def __len__(self):
+        return len(self.features)
+
+    def __str__(self):
+        return "DataFeatureRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.features
+
+    def choice(self)->DataFeature:
+        return self.features[choice(list(self.features.keys()))]
+
+class DataRequirementRepo:
+    """  Store a requirement """
+    def __init__(self):
+        self.requirements = {}
+    
+    def add_datarequirement(self, datarequirement: DataRequirement):
+        self.requirements[datarequirement.name] = datarequirement
+        return self
+
+    def remove_datafeature(self, datarequirement: DataRequirement):
+        if datarequirement.name in self.requirements:
+            del self.requirements[datarequirement.name]
+        return self
+
+    def __len__(self):
+        return len(self.requirements)
+
+    def __str__(self):
+        return "DataRequirementRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.requirements
+
+    def choice(self)->DataRequirement:
+        return self.requirements[choice(list(self.requirements.keys()))]
+
+class DataClassRepo:
+    """  Store a class with a list of properties """
+    def __init__(self):
+        self.dataclasses = {}
+    
+    def add_dataclass(self, dataclass: DataClass):
+        self.dataclasses[dataclass.name] = dataclass
+        return self
+
+    def remove_dataclass(self, dataclass: DataClass):
+        if dataclass.name in self.dataclasses:
+            del self.dataclasses[dataclass.name]
+        return self
+
+    def __len__(self):
+        return len(self.dataclasses)
+
+    def __str__(self):
+        return "DataClassRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.dataclasses
+
+    def choice(self)->DataClass:
+        return self.dataclasses[choice(list(self.dataclasses.keys()))]
+
+    def get_dataclasses(self)->List[DataClass]:
+        return list(self.dataclasses.values())
+
+    def get_ref_datatypes(self)->Set[DataPropertyType]:
+        aggregate = set([])
+        for cl in self.get_dataclasses():
+          aggregate = aggregate.union(cl.get_ref_datatypes())
+        return aggregate
+        
+    def get_by_name(self, name: str):
+        try:
+            found = self.dataclasses[name]
+            return found
+        except:
+            raise Exception("No dataclass {} found".format(name))
+
+class DataServiceNameRepo:
+    """ These could human readable and are re-used across classes but not necessarily in a consistent manner. Ex: PersonDB, ... """
+    def __init__(self):
+        self.counter = 0
+        self.names = set([])
+    
+    def add_name(self, name: str):
+        self.names.add(name)
+        return name
+
+    def add_next_name(self):
+        self.counter = self.counter + 1
+        return self.add_name("Service{}".format(self.counter))
+
+    def add_names_auto(self, count: int):
+        for i in range(count):
+            self.add_next_name()
+        return self
+
+    def __len__(self):
+        return len(self.names)
+
+    def __str__(self):
+        return "DataServiceNameRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.names
+
+class DataServiceRepo:
+    """  Store a service  """
+    def __init__(self):
+        self.dataservices = {}
+    
+    def add_dataservice(self, dataservice: DataService):
+        self.dataservices[dataservice.name] = dataservice
+        return self
+
+    def remove_dataservice(self, dataservice: DataService):
+        if dataservice.name in self.dataservices:
+            del self.dataservices[dataservice.name]
+        return self
+
+    def __len__(self):
+        return len(self.dataservices)
+
+    def __str__(self):
+        return "DataServiceRepo: size {}".format(len(self))
+
+    def has(self, name: str)->bool:
+        return name in self.dataservices
+
+    def get_names(self)->List[str]:
+        return list(self.dataservices.keys())
+
+    def get_services(self)->List[DataService]:
+        return list(self.dataservices.values())
+    
+    def get_by_name(self, name: str):
+        try:
+            found = self.dataservices[name]
+            return found
+        except:
+            raise Exception("No service {} found".format(name))
+        
+
+    def choice(self)->DataService:
+        return self.dataservices[choice(list(self.dataservices.keys()))]
+
+class RandRange:
+    def __init__(self, start: int, stop: int):
+        self.start = start
+        self.stop = stop
+
+    @classmethod
+    def from_obj(cls, content):
+        return cls(int(content["start"]), int(content["stop"]))
+
+    def random(self):
+        diff_range = self.stop - self.start
+        if diff_range <=100:
+            return randint(self.start, self.stop)
+        else:
+            divisions = int(ceil(log(diff_range,10)))
+            expof10 = randint(1, divisions)
+            mindec = min(10 ** (expof10-1), self.start)
+            maxdec = max(10 ** expof10, self.stop)
+            return randint(mindec, maxdec)
+
+    def __str__(self):
+        return "RandRange: [{}, {}]".format(self.start, self.stop)
+
+class RatioRange:
+    def __init__(self, start: Fraction, stop: Fraction):
+        self.start = start
+        self.stop = stop
+
+    @classmethod
+    def from_obj(cls, content):
+        return cls(Fraction(content["start"]), Fraction(content["stop"]))
+
+    def random_float(self)->float:
+        return uniform(float(self.start), float(self.stop))
+
+    def random_int(self, scale: int)->int:
+        return int(self.random_float()*scale)
+
+    def should_activate(self)->bool:
+        return uniform(0.0, 1.0) <= self.random_float()
+
+    def __str__(self):
+        return "RatioRange: [{}, {}]".format(self.start, self.stop)
+
+class DataUsage:
+    def __init__(self, datatype: DataPropertyType):
+        self.datatype = datatype
+        self.uniq_count = 1
+        self.req_by_day = 1
+        self.weight = 0
+        self.monthly_data_transfer = 0
+        self.processing_magnitude = 0
+        self.service_cost = Fraction(0, 1) 
+        self.crashes = set([])
+        self.feature_categories = []
+        self.requirement_categories = []
+  
+    def to_string(self):
+        return "DataUsage: datatype: {}, unique: {}, req/day: {}, weight (kB): {}, storage (GB): {}, data transfer/month (GB) {}, processing: {}, service cost: {}, crashes: {}".format(self.datatype, self.uniq_count, self.req_by_day, self.weight // 1000, self.get_weighted_data_storage() // 1000000000, self.get_monthly_weighted_data_transfer() // 1000000000, self.processing_magnitude, self.service_cost, sorted(list(self.crashes)))
+
+    def set_uniq_count(self, uniq_count: int):
+        self.uniq_count = uniq_count
+        return self
+    
+    def set_req_by_day(self, req_by_day: int):
+        self.req_by_day = req_by_day
+        return self
+
+    def set_weight(self, weight: int):
+        self.weight = weight
+        return self
+    
+    def set_monthly_data_transfer(self, monthly_data_transfer: int):
+        self.monthly_data_transfer = monthly_data_transfer
+        return self
+
+    def get_weighted_data_storage(self)->int:
+        return self.uniq_count*self.weight
+
+    def get_monthly_weighted_data_transfer(self):
+        return self.req_by_day*self.weight*30
+
+    def set_processing_magnitude(self, processing_magnitude: int):
+        self.processing_magnitude = processing_magnitude
+        return self
+
+    def set_service_cost(self, service_cost: Fraction):
+        self.service_cost = service_cost
+        return self
+
+    def get_weighted_service_cost(self):
+        return self.service_cost*self.req_by_day
+
+    def add_crash(self, crash: str):
+        self.crashes.add(crash)
+        return self
+
+    def set_feature_categories(self, feature_categories: List[str]):
+        self.feature_categories = feature_categories
+
+    def set_requirement_categories(self, requirement_categories: List[str]):
+        self.requirement_categories = requirement_categories
+
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+    
+    def __eq__(self, other):
+        return (self.datatype, self.uniq_count, self.req_by_day) == (other.datatype, other.uniq_count, other.req_by_day)
+
+    def __hash__(self):
+        return hash(self.datatype, self.uniq_count, self.req_by_day)
+    
+class DataUsageOverview:
+    """A data class containing a list of data usage """
+    def __init__(self):
+        self.usages = []
+        self.data_storage = 0
+        self.monthly_data_transfer = 0
+        self.processing_magnitude = 0
+        self.service_cost = Fraction(0, 1)
+        self.crashes = set([])
+        self.feature_categories = Counter()
+        self.requirement_categories = Counter()
+    
+    def set_properties(self, usages: List[DataUsage]):
+        self.usages = usages
+        return self
+    
+    def add(self, usage: DataUsage):
+        self.usages.append(usage)
+        return self
+
+    def to_string(self):
+        return "DataUsageOverview: {}, data storage (GB): {}, monthly data transfer (GB): {}, cost: {}, crashes: {}, features: {}, requirements: {}".format(
+            len(self)
+            , self.data_storage // 1000000000
+            , self.monthly_data_transfer // 1000000000
+            , self.service_cost
+            , list(self.crashes)
+            , self.feature_categories
+            , self.requirement_categories
+            )
+    
+    def __str__(self):
+        return self.to_string()
+    
+    def __repr__(self):
+        return self.to_string()
+        
+    def __len__(self):
+        return len(self.usages)
+
+    def summarise(self):
+        features = []
+        requirements = []
+        for usage in self.usages:
+            self.data_storage += usage.get_weighted_data_storage()
+            self.monthly_data_transfer += usage.get_monthly_weighted_data_transfer()
+            self.processing_magnitude = max(self.processing_magnitude, usage.processing_magnitude)
+            self.service_cost += usage.get_weighted_service_cost()
+            self.crashes = self.crashes.union(usage.crashes)
+            features += usage.feature_categories
+            requirements += usage.requirement_categories
+        self.feature_categories = Counter(features)
+        self.requirement_categories = Counter(requirements)
+       
+        print(self)
+
+class DataSystemConfig:
+    def __init__(self):
+        self.datasystem_count = 50
+        self.simple_datatype_count_range = RandRange(1, 50)
+        self.ref_datatype_ratio_range = RatioRange(Fraction(1, 20), Fraction(2, 20))
+        self.class_count_range = RandRange(1, 50)
+        self.class_instance_count_range = RandRange(1, 50)
+        self.class_req_by_day_count_range = RandRange(1, 50)
+        self.service_count_range = RandRange(1, 50)
+        self.feature_count_range = RandRange(1, 50)
+        self.requirement_count_range = RandRange(1, 50)
+        self.reusable_property_count_range = RandRange(100, 500)
+        self.property_count_range = RandRange(1, 50)
+        self.ref_property_ratio_range = RatioRange(Fraction(1, 20), Fraction(2, 20))
+        self.service_feature_count_range = RandRange(1, 5)
+        self.service_requirement_count_range = RandRange(1, 5)
+        self.service_requirement_ratio_range = RatioRange(Fraction(1, 20), Fraction(2, 20))
+        self.max_items_range = RandRange(1, 1000)
+        self.max_memory_byte_range = RandRange(1000000, 100000000)
+        self.proc_micro_sec_range = RandRange(1, 20)
+        self.error_rate_range = RandRange(2, 8)
+        self.timeout_magnitude_range = RandRange(20, 27)
+        self.feature_category_names = []
+        self.requirement_category_names = []
+
+    def __str__(self):
+        return ";".join([
+            "datasystem_count=",
+            str(self.datasystem_count),
+            "simple_datatype_count_range=",
+            str(self.simple_datatype_count_range),
+            "ref_datatype_ratio_range=",
+            str(self.ref_datatype_ratio_range),
+            "class_count_range=",
+            str(self.class_count_range),
+            "class_instance_count_range=",
+            str(self.class_instance_count_range),
+            "class_req_by_day_count_range=",
+            str(self.class_req_by_day_count_range),
+            "service_count_range=",
+            str(self.service_count_range),
+            "feature_count_range=",
+            str(self.feature_count_range),
+            "requirement_count_range=",
+            str(self.requirement_count_range),
+            "reusable_property_count_range=",
+            str(self.reusable_property_count_range),
+            "property_count_range=",
+            str(self.property_count_range),
+            "ref_property_ratio_range=",
+            str(self.ref_property_ratio_range),
+            "service_feature_count_range=",
+            str(self.service_feature_count_range),
+            "service_requirement_count_range=",
+            str(self.service_requirement_count_range),
+            "service_requirement_ratio_range=",
+            str(self.service_requirement_ratio_range),
+            "max_items_range=",
+            str(self.max_items_range),
+            "max_memory_byte_range=",
+            str(self.max_memory_byte_range),
+            "proc_micro_sec_range=",
+            str(self.proc_micro_sec_range),
+            "error_rate_range=",
+            str(self.error_rate_range),
+            "timeout_magnitude_range=",
+            str(self.timeout_magnitude_range),
+            "feature_category_names",
+            str(self.feature_category_names),
+            "requirement_category_names",
+            str(self.requirement_category_names)
+       ])
+
+    @classmethod
+    def from_obj(cls, content):
+        config = cls()
+        config.set_datasystem_count(int(content["datasystem-count"]))
+        config.set_simple_datatype_count_range(RandRange.from_obj(content["simple-datatype-count-range"]))
+        config.set_ref_datatype_ratio_range(RatioRange.from_obj(content["ref-datatype-ratio-range"]))
+        config.set_class_count_range(RandRange.from_obj(content["class-count-range"]))
+        config.set_class_instance_count_range(RandRange.from_obj(content["class-instance-count-range"]))
+        config.set_class_req_by_day_count_range(RandRange.from_obj(content["class-req-by-day-count-range"]))
+        config.set_service_count_range(RandRange.from_obj(content["service-count-range"]))
+        config.set_feature_count_range(RandRange.from_obj(content["feature-count-range"]))
+        config.set_requirement_count_range(RandRange.from_obj(content["requirement-count-range"]))
+        config.set_reusable_property_count_range(RandRange.from_obj(content["reusable-property-count-range"]))
+        config.set_property_count_range(RandRange.from_obj(content["property-count-range"]))
+        config.set_ref_property_ratio_range(RatioRange.from_obj(content["ref-property-ratio-range"]))
+        config.set_service_feature_count_range(RandRange.from_obj(content["service-feature-count-range"]))
+        config.set_service_requirement_count_range(RandRange.from_obj(content["service-requirement-count-range"]))
+        config.set_service_requirement_ratio_range(RatioRange.from_obj(content["service-requirement-ratio-range"]))
+        config.set_max_items_range(RandRange.from_obj(content["max-items-range"]))
+        config.set_max_memory_byte_range(RandRange.from_obj(content["max-memory-byte-range"]))
+        config.set_proc_micro_sec_range(RandRange.from_obj(content["proc-micro-sec-range"]))
+        config.set_error_rate_range(RandRange.from_obj(content["error-rate-range"]))
+        config.set_timeout_magnitude_range(RandRange.from_obj(content["timeout-magnitude-range"]))
+        config.set_feature_category_names(content["feature-category-names"])
+        config.set_requirement_category_names(content["requirement-category-names"])
+        return config
+
+    def set_datasystem_count(self, datasystem_count: int):
+        self.datasystem_count = datasystem_count
+        return self
+
+    def set_simple_datatype_count_range(self, simple_datatype_count_range: RandRange):
+        self.simple_datatype_count_range = simple_datatype_count_range
+        return self
+
+    def set_ref_datatype_ratio_range(self, ref_datatype_ratio_range: RatioRange):
+        self.ref_datatype_ratio_range = ref_datatype_ratio_range
+        return self
+
+    def set_class_count_range(self, class_count_range: RandRange):
+        self.class_count_range = class_count_range
+        return self
+    
+    def set_class_instance_count_range(self, class_instance_count_range: RandRange):
+        self.class_instance_count_range = class_instance_count_range
+        return self
+
+    def set_class_req_by_day_count_range(self, class_req_by_day_count_range: RandRange):
+        self.class_req_by_day_count_range = class_req_by_day_count_range
+        return self
+
+    def set_feature_count_range(self, feature_count_range: RandRange):
+        self.feature_count_range = feature_count_range
+        return self
+
+    def set_requirement_count_range(self, requirement_count_range: RandRange):
+        self.requirement_count_range = requirement_count_range
+        return self
+
+    def set_service_count_range(self, service_count_range: RandRange):
+        self.service_count_range = service_count_range
+        return self
+    
+    def set_reusable_property_count_range(self, reusable_property_count_range: RandRange):
+        self.reusable_property_count_range = reusable_property_count_range
+        return self
+
+    def set_property_count_range(self, property_count_range: RandRange):
+        self.property_count_range = property_count_range
+        return self
+
+    def set_ref_property_ratio_range(self, ref_property_ratio_range: RatioRange):
+        self.ref_property_ratio_range = ref_property_ratio_range
+        return self
+
+    def set_service_feature_count_range(self, service_feature_count_range: RandRange):
+        self.service_feature_count_range = service_feature_count_range
+        return self
+
+    def set_service_requirement_count_range(self, service_requirement_count_range: RandRange):
+        self.service_requirement_count_range = service_requirement_count_range
+        return self
+
+    def set_service_requirement_ratio_range(self, service_requirement_ratio_range: RatioRange):
+        self.service_requirement_ratio_range = service_requirement_ratio_range
+        return self
+
+    def set_max_items_range(self, max_items_range: RandRange):
+        self.max_items_range = max_items_range
+        return self
+
+    def set_max_memory_byte_range(self, max_memory_byte_range: RandRange):
+        self.max_memory_byte_range = max_memory_byte_range
+        return self
+
+    def set_proc_micro_sec_range(self, proc_micro_sec_range: RandRange):
+        self.proc_micro_sec_range = proc_micro_sec_range
+        return self
+
+    def set_error_rate_range(self, error_rate_range: RandRange):
+        self.error_rate_range = error_rate_range
+        return self
+
+    def set_timeout_magnitude_range(self, timeout_magnitude_range: RandRange):
+        self.timeout_magnitude_range = timeout_magnitude_range
+        return self
+
+    def set_feature_category_names(self, category_names: List[str]):
+        self.feature_category_names = category_names
+        return self
+
+    def set_requirement_category_names(self, category_names: List[str]):
+        self.requirement_category_names = category_names
+        return self
+
+
+class ServiceAndClass:
+    def __init__(self, service: DataService, dataclass: DataClass):
+        self.service = service
+        self.dataclass = dataclass
+
+    def to_string(self):
+        return "{} -> {}".format(self.service.name, self.dataclass.name)
+    def __str__(self):
+        return self.to_string()
+
+    def __repr__(self):
+        return self.to_string()
+
+    @classmethod
+    def from_data_property_type(cls, data_service_repo: DataServiceRepo, data_class_repo: DataClassRepo, proptype: DataPropertyType):
+        return cls(service=data_service_repo.get_by_name(proptype.get_service_name()), dataclass = data_class_repo.get_by_name(proptype.get_dataname()))
+
+    @staticmethod
+    def from_data_property_type_list(data_service_repo: DataServiceRepo, data_class_repo: DataClassRepo, data_prop_type_list: List[DataPropertyType]):
+        return [ServiceAndClass(service=data_service_repo.get_by_name(rt.get_service_name()), dataclass = data_class_repo.get_by_name(rt.get_dataname())) for rt in data_prop_type_list]
+
+MAX_MAGNITUDE = 30
+
+def calculate_magnitude_recursively(data_service_repo: DataServiceRepo, data_class_repo: DataClassRepo, limit: int, magnitude: int, proptype: DataPropertyType):
+        sc = ServiceAndClass.from_data_property_type(data_service_repo, data_class_repo, proptype)
+        new_magnitude = add_magnitude(magnitude, sc.service.processing_magnitude)
+        if len(sc.dataclass.get_ref_datatypes()) == 0:
+            return new_magnitude
+        elif limit <= 0:
+            return MAX_MAGNITUDE
+        else:
+            child_magnitudes = [ calculate_magnitude_recursively(data_service_repo, data_class_repo,limit = limit -1, magnitude = magnitude, proptype = dt ) for dt in sc.dataclass.get_ref_datatypes()]
+            worse_magnitude = max(child_magnitudes)
+            return worse_magnitude
+                
+class ServiceCost:
+    def __init__(self):
+        self.feature_coeff = Fraction(1, 1)
+        self.error_rate_coeff = Fraction(1, 1)
+        self.max_memory_byte_coeff = Fraction(1, 1)
+
+    def set_feature_coeff(self, value: Fraction):
+        self.feature_coeff = value
+        return self
+
+    def set_error_rate_coeff(self, value: Fraction):
+        self.error_rate_coeff = value
+        return self
+
+    def set_max_memory_byte_coeff(self, value: Fraction):
+        self.max_memory_byte_coeff = value
+        return self
+
+    @classmethod
+    def from_obj(cls, content):
+        calc = cls()
+        calc.set_feature_coeff(Fraction(content["feature-coeff"]))
+        calc.set_error_rate_coeff(Fraction(content["error-rate-coeff"]))
+        calc.set_max_memory_byte_coeff(Fraction(content["max-memory-byte-coeff"]))
+        return calc
+    
+    def __str__(self):
+        return "ServiceCost: feature: {}, error rate {}, memory {}".format(self.feature_coeff, self.error_rate_coeff, self.max_memory_byte_coeff)
+
+    def get_cost(self, service: DataService)->Fraction:
+        higher_is_better = self.feature_coeff*len(service.features) + self.max_memory_byte_coeff*log(service.max_memory_byte, 5) - self.error_rate_coeff*log(service.error_rate, 10)
+        return  higher_is_better
+
+class DataSystem:
+    def __init__(self, config: DataSystemConfig, service_cost: ServiceCost):
+        self.config = config
+        self.service_cost = service_cost
+        self.data_property_type_repo = DataPropertyTypeRepo()
+        self.data_property_name_repo = DataPropertyNameRepo()
+        self.data_class_name_repo = DataClassNameRepo()
+        self.data_class_repo = DataClassRepo()
+        self.data_feature_name_repo = DataFeatureNameRepo()
+        self.data_feature_repo = DataFeatureRepo()
+        self.data_requirement_name_repo = DataRequirementNameRepo()
+        self.data_requirement_repo = DataRequirementRepo()
+        self.data_service_name_repo = DataServiceNameRepo()
+        self.data_service_repo = DataServiceRepo()
+        self.data_usage_overview = DataUsageOverview()
+
+    def get_services(self)->List[DataService]:
+        return self.data_service_repo.get_services()
+
+    def get_dataclasses(self)->List[DataClass]:
+        return self.data_class_repo.get_dataclasses()
+
+    def get_all_ref_datatypes(self)->Set[DataPropertyType]:
+        return set([rt for rt in self.data_property_type_repo.ref_types_as_list()])
+
+    def get_used_ref_datatypes(self)->Set[DataPropertyType]:
+        return self.data_class_repo.get_ref_datatypes()
+
+    def get_unused_ref_datatypes(self)->Set[DataPropertyType]:
+        return self.get_all_ref_datatypes().difference(self.get_used_ref_datatypes())
+
+    def get_usage_overview(self)-> DataUsageOverview:
+        return self.data_usage_overview
+    
+    def add_dataclass_auto(self)->DataClass:
+        dataClass = DataClass()
+        dataClass.set_name(self.data_class_name_repo.add_next_name())
+        self.data_class_repo.add_dataclass(dataClass)
+        return dataClass
+
+    def add_dataservice_auto(self)->DataService:
+        dataService = DataService()
+        dataService.set_name(self.data_service_name_repo.add_next_name())
+        self.data_service_repo.add_dataservice(dataService)
+        return dataService
+
+    def add_datafeature_auto(self)->DataFeature:
+        dataFeature = DataFeature()
+        dataFeature.set_name(self.data_feature_name_repo.add_next_name())
+        self.data_feature_repo.add_datafeature(dataFeature)
+        return dataFeature
+    
+    def add_datarequirement_auto(self)->DataRequirement:
+        dataRequirement = DataRequirement()
+        dataRequirement.set_name(self.data_requirement_name_repo.add_next_name())
+        self.data_requirement_repo.add_datarequirement(dataRequirement)
+        return dataRequirement
+
+    def add_property_names_auto(self):
+        self.data_property_name_repo.add_names_auto(self.config.reusable_property_count_range.random())
+
+    def add_basic_datafeature_auto(self):
+        for _ in range(self.config.feature_count_range.random()):
+            dataFeature = self.add_datafeature_auto()
+            dataFeature.set_category_name(choice(self.config.feature_category_names))
+
+    def add_basic_datarequirement_auto(self):
+        for _ in range(self.config.requirement_count_range.random()):
+            dataRequirement = self.add_datarequirement_auto()
+            dataRequirement.set_category_name(choice(self.config.requirement_category_names))
+
+    def add_basic_dataservice_auto(self):
+        for _ in range(self.config.service_count_range.random()):
+            dataService = self.add_dataservice_auto()
+            dataService.set_processing_magnitude(self.config.proc_micro_sec_range.random())
+            dataService.set_error_processing_magnitude(self.config.proc_micro_sec_range.random())
+            dataService.set_error_rate(Fraction(1, 10**self.config.error_rate_range.random()))
+            dataService.set_max_memory_byte(self.config.max_memory_byte_range.random())
+            dataService.set_timeout_magnitude(self.config.timeout_magnitude_range.random())
+            dataService.set_features([self.data_feature_repo.choice() for _ in range(self.config.service_feature_count_range.random())])
+            if self.config.service_requirement_ratio_range.should_activate():
+                dataService.set_requirements([self.data_requirement_repo.choice() for _ in range(self.config.service_requirement_count_range.random())])
+            else:
+                dataService.set_requirements([])
+    
+    def add_dataclass_names_auto(self):
+        for _ in range(self.config.class_count_range.random()):
+            self.data_class_name_repo.add_next_name()
+
+    def add_datatypes_auto(self):
+        simple_count = self.config.simple_datatype_count_range.random()
+        simple_types = ["Type{}".format(i) for i in range(simple_count)]
+        min_ref_types = ["{}:{}".format(self.data_service_repo.choice().name, dataclassname) for dataclassname in self.data_class_name_repo.get_names()]
+        ref_count = self.config.ref_datatype_ratio_range.random_int(simple_count) - len(min_ref_types)
+        ref_types = ["{}:{}".format(self.data_service_repo.choice().name, self.data_class_name_repo.choice()) for _ in range(ref_count)]
+        created_types =  simple_types + min_ref_types + ref_types
+        self.data_property_type_repo.add_types(created_types)
+        self.data_property_type_repo.add_types_as_str("Bool Char Int Float")
+
+    def add_basic_dataclass_auto(self):
+        for name in self.data_class_name_repo.get_names():
+            dataClass = DataClass()
+            dataClass.set_name(name)
+            self.data_class_repo.add_dataclass(dataClass)
+            propertyNames = self.data_property_name_repo.sample(self.config.property_count_range.random())
+            for pname in propertyNames:
+                prop = DataProperty()
+                prop.set_name(pname)
+                prop.set_max_items(self.config.max_items_range.random())
+                prop.set_min_items(randint(0, prop.max_items))
+                prop.set_datatype(self.data_property_type_repo.random_type(isref=self.config.ref_property_ratio_range.should_activate()))
+                dataClass.add(prop)
+
+    def add_data_usage_auto(self):
+        """ One data-usage by dataclass """
+        all = self.get_all_ref_datatypes()
+        used = self.get_used_ref_datatypes()
+        for cl in self.data_class_repo.get_dataclasses():
+            somedatatypes = [dt for dt in all if dt.match_dataname(cl.name)]
+            selected = somedatatypes[0]
+            sc = ServiceAndClass.from_data_property_type(self.data_service_repo, self.data_class_repo, selected)
+            referenced = set(somedatatypes).intersection(used)
+            if len(referenced) > 0:
+                selected = list(referenced)[0]
+            data_usage = DataUsage(selected)
+            data_usage.set_uniq_count(self.config.class_instance_count_range.random())
+            data_usage.set_req_by_day(self.config.class_req_by_day_count_range.random())
+            weight = cl.get_weight()
+            data_usage.set_weight(weight)
+            data_usage.set_processing_magnitude(calculate_magnitude_recursively(self.data_service_repo, self.data_class_repo, limit = 6, magnitude = 0, proptype=selected))
+            data_usage.set_service_cost(self.service_cost.get_cost(sc.service))
+            data_usage.set_feature_categories([feat.category_name for feat in sc.service.features])
+            data_usage.set_requirement_categories([req.category_name for req in sc.service.requirements])
+            if data_usage.processing_magnitude >= sc.service.timeout_magnitude:
+                data_usage.add_crash("timeout")
+            self.data_usage_overview.add(data_usage)
+ 
+    def prepare(self):
+        self.add_property_names_auto()
+        self.add_basic_datafeature_auto()
+        self.add_basic_datarequirement_auto()
+        self.add_basic_dataservice_auto()
+        self.add_dataclass_names_auto()
+        self.add_datatypes_auto()
+        self.add_basic_dataclass_auto()
+        self.add_data_usage_auto()
+
+
+    def __str__(self):
+        return "DataSystem: {}, {}, {}, {}, {}, {}, {}".format(
+            self.data_property_type_repo,
+            self.data_property_name_repo,
+            self.data_class_repo,
+            self.data_service_repo,
+            self.data_feature_repo,
+            self.data_requirement_repo,
+            self.data_usage_overview
+            )
