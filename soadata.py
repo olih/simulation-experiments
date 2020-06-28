@@ -775,7 +775,6 @@ class DataUsageOverview:
         features = []
         requirements = []
         for usage in self.usages:
-            print(usage)
             self.data_storage += usage.get_weighted_data_storage()
             self.monthly_data_transfer += usage.get_monthly_weighted_data_transfer()
             self.processing_magnitude = max(self.processing_magnitude, usage.processing_magnitude)

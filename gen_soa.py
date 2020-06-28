@@ -39,4 +39,3 @@ for _ in range(dataconfig.datasystem_count):
     dataSystem = DataSystem(dataconfig, service_cost = serviceCost)
     dataSystem.prepare()
     dataSystem.get_usage_overview().summarise()
-    exit() # TODO delete this line
