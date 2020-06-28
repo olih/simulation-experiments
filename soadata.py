@@ -3,7 +3,7 @@ from typing import List, Tuple, Set
 from enum import Enum, auto
 from random import sample, choice, randint, uniform
 from collections import Counter
-from math import log
+from math import log, floor, ceil
 
 def add_magnitude(a: int, b: int)->int:
     """ Simplification of 2^a+ 2^b"""
@@ -626,7 +626,15 @@ class RandRange:
         return cls(int(content["start"]), int(content["stop"]))
 
     def random(self):
-        return randint(self.start, self.stop)
+        diff_range = self.stop - self.start
+        if diff_range <=100:
+            return randint(self.start, self.stop)
+        else:
+            divisions = int(ceil(log(diff_range,10)))
+            expof10 = randint(1, divisions)
+            mindec = min(10 ** (expof10-1), self.start)
+            maxdec = max(10 ** expof10, self.stop)
+            return randint(mindec, maxdec)
 
     def __str__(self):
         return "RandRange: [{}, {}]".format(self.start, self.stop)
@@ -767,6 +775,7 @@ class DataUsageOverview:
         features = []
         requirements = []
         for usage in self.usages:
+            print(usage)
             self.data_storage += usage.get_weighted_data_storage()
             self.monthly_data_transfer += usage.get_monthly_weighted_data_transfer()
             self.processing_magnitude = max(self.processing_magnitude, usage.processing_magnitude)
