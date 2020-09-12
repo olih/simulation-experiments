@@ -139,11 +139,3 @@ def save_to_csv(filename, points: List[SimulationPoint]):
         writer.writeheader()
         for p in points:
             writer.writerow(p.to_obj())
-
-simParams = SimulationParams()
-simParams.set_review_time_second(IntRange(3, 120))
-simParams.set_available_time_second(IntRange(3600*4, 3600*8*5))
-simParams.set_success_ratio(FractionRange(Fraction(1,1000), Fraction(1,10)))
-simParams.set_count(100)
-
-save_to_csv("simulation3.csv", Simulation(simParams).simulate())
