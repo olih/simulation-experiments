@@ -1,31 +1,42 @@
 {
     "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
-    "data": {"url": "simulation3.csv"},
-    "transform": [
-    ],
+    "data": {
+        "url": "simulation3.csv",
+        "format": {
+            "type": "csv"
+        }
+    },
+    "title": "Accepted assets from reviewed assets",
+    "transform": [],
     "mark": "rect",
     "width": 300,
     "height": 200,
     "encoding": {
-      "x": {
-        "bin": {"maxbins":60},
-        "field": "available_time_h",
-        "type": "quantitative"
-      },
-      "y": {
-        "bin": {"maxbins": 40},
-        "field": "reviewed_assets",
-        "type": "quantitative"
-      },
-      "color": {
-        "aggregate": "count",
-        "type": "quantitative"
-      }
+        "x": {
+            "bin": {
+                "maxbins": 100
+            },
+            "title": "Available hours",
+            "field": "available_time_h",
+            "type": "quantitative"
+        },
+        "y": {
+            "bin": {
+                "maxbins": 100
+            },
+            "title": "Reviewed assets",
+            "field": "reviewed_assets",
+            "type": "quantitative"
+        },
+        "color": {
+            "title": "Accepted assets",
+            "field": "accepted_assets",
+            "type": "quantitative"
+        }
     },
     "config": {
-      "view": {
-        "stroke": "transparent"
-      }
+        "view": {
+            "stroke": "transparent"
+        }
     }
-  }
-  
+}
