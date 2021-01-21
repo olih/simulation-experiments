@@ -1,0 +1,21 @@
+Name, Description
+Numeric Continuous, Any value that can be expressed as a float
+Numeric Discrete, Any value that can be expressed as a integer
+Categorical Binary,Any value that can be either true or false
+Categorical Ordinal, Any value from an ordered enumeration
+Data Frame, "Data that could be stored in a spreadsheet table, also known as rectangular data.""
+Predictor, A column in the spreadsheet that can be used for prediction (statistics)
+Dependent Variable, A column that may be able to be predicted (statistics)
+Feature, A column in the spreadsheet that can be used for prediction (data science)
+Outcome, "A column that may be able to be predicted, also known as target (data science"
+Record, A row in the spreadsheet
+Sample, "A collection of rows (statistics), a single row (data science)""
+Nonrectangular Data Structures, "Time Series or Spatial data structures Graph (or network) data structures"
+Graph, Plots and visualizations (statistics)
+Trimmed mean, Average without the extreme values.
+Robust, Not impacted by extreme values.
+Outlier, A value that is quite different from the rest of values
+Anomaly Detection, Identification of the outliers
+Estimate, Calculated value (statistics)
+Metric, Calculated value (data science)
+
