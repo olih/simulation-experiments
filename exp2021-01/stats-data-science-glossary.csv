@@ -1,0 +1,36 @@
+Name, Description, Link
+Numeric Continuous, Any value that can be expressed as a float,
+Numeric Discrete, Any value that can be expressed as a integer
+Categorical Binary,Any value that can be either true or false
+Categorical Ordinal, Any value from an ordered enumeration
+Data Frame, "Data that could be stored in a spreadsheet table, also known as rectangular data.""
+Predictor, A column in the spreadsheet that can be used for prediction (statistics)
+Dependent Variable, A column that may be able to be predicted (statistics)
+Feature, A column in the spreadsheet that can be used for prediction (data science)
+Outcome, "A column that may be able to be predicted, also known as target (data science"
+Record, A row in the spreadsheet
+Sample, "A collection of rows (statistics), a single row (data science)""
+Nonrectangular Data Structures, "Time Series or Spatial data structures Graph (or network) data structures"
+Graph, Plots and visualizations (statistics)
+Trimmed mean, Average without the extreme values.
+Robust, Not impacted by extreme values.
+Outlier, A value that is quite different from the rest of values
+Anomaly Detection, Identification of the outliers
+Estimate, Calculated value (statistics)
+Metric, Calculated value (data science)
+Deviations, Difference between the values and the estimate of location, https://en.wikipedia.org/wiki/Deviation_(statistics)#Unsigned_or_absolute_deviation
+Variance, The sum of squared deviations from the mean divided by n – 1, https://en.wikipedia.org/wiki/Variance
+Standard deviation, The square root of the variance, https://en.wikipedia.org/wiki/Standard_deviation
+Mean absolute deviation, Average of the absolute deviations from a central point ,https://en.wikipedia.org/wiki/Average_absolute_deviation
+Median absolute deviation, Robust measure of the variability of a univariate sample of quantitative data ,https://en.wikipedia.org/wiki/Median_absolute_deviation
+Range, Difference between the largest and smallest values, https://en.wikipedia.org/wiki/Range_(statistics)
+Percentile, Score below which a given percentage of scores in its frequency distribution fall ,https://en.wikipedia.org/wiki/Percentile
+Interquartile range, "interquartile range (IQR), also called the midspread, middle 50%, or H‑spread, is a measure of statistical dispersion, being equal to the difference between 75th and 25th percentiles",https://en.wikipedia.org/wiki/Interquartile_range
+Boxplot, Method for graphically depicting groups of numerical data through their quartiles,https://en.wikipedia.org/wiki/Box_plot
+Frequency table, Graph that displays the frequency of various outcomes in a sample, https://en.wikipedia.org/wiki/Frequency_distribution
+Histogram, Approximate representation of the distribution of numerical data,https://en.wikipedia.org/wiki/Histogram
+Density plot, A smoothed version of the histogram,
+Location, First moment of a distribution (statistics),
+Variability, Second moment of a distribution (statistics),
+Skewness, Third moment of a distribution (statistics),
+Kurtosis, Fourth moment of a distribution (statistics),
